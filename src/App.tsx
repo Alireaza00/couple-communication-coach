@@ -13,6 +13,7 @@ import Interventions from "./pages/Interventions";
 import DateNight from "./pages/DateNight";
 import Progress from "./pages/Progress";
 import HowItWorks from "./pages/HowItWorks";
+import ConversationStarters from "./pages/ConversationStarters";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/interventions" element={<Interventions />} />
             <Route path="/date-night" element={<DateNight />} />
             <Route path="/progress" element={<Progress />} />
+            <Route path="/conversation-starters" element={<ConversationStarters />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

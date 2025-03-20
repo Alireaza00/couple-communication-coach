@@ -1,5 +1,4 @@
-
-import { DateNightIdea, OpenRouterMessage, AIResponse } from "@/types";
+import { DateNightIdea, OpenRouterMessage, AIResponse, ConversationStarter } from "@/types";
 
 // Placeholder function for fetching date nights
 export const getDateNights = async (userId?: string, date?: Date) => {
@@ -146,5 +145,213 @@ export const callOpenRouter = async (messages: OpenRouterMessage[]): Promise<AIR
       text: "I'm sorry, I couldn't process your request. Please check your API key and try again.",
       model: "error"
     };
+  }
+};
+
+// Function to get conversation starters
+export const getConversationStarters = async (): Promise<ConversationStarter[]> => {
+  // This would eventually fetch from an API or database
+  // For now, we'll return a static list
+  return [
+    {
+      id: "1",
+      question: "What's one small thing I do that makes you happy?",
+      category: "relationship",
+      difficulty: "easy"
+    },
+    {
+      id: "2",
+      question: "If we could travel anywhere tomorrow, where would you want to go and why?",
+      category: "fun",
+      difficulty: "easy"
+    },
+    {
+      id: "3",
+      question: "What's something you're afraid to tell me?",
+      category: "deep",
+      difficulty: "deep"
+    },
+    {
+      id: "4",
+      question: "What's your favorite memory of us together?",
+      category: "relationship",
+      difficulty: "easy"
+    },
+    {
+      id: "5",
+      question: "If you could change one decision from your past, what would it be?",
+      category: "past",
+      difficulty: "medium"
+    },
+    {
+      id: "6",
+      question: "What's something you want to accomplish in the next five years?",
+      category: "future",
+      difficulty: "medium"
+    },
+    {
+      id: "7",
+      question: "What makes you feel most loved in our relationship?",
+      category: "relationship",
+      difficulty: "medium"
+    },
+    {
+      id: "8",
+      question: "What's one way we could improve our communication?",
+      category: "relationship",
+      difficulty: "medium"
+    },
+    {
+      id: "9",
+      question: "What hobby or activity have you always wanted to try together?",
+      category: "fun",
+      difficulty: "easy"
+    },
+    {
+      id: "10",
+      question: "What's the most meaningful gift you've ever received?",
+      category: "past",
+      difficulty: "medium"
+    },
+    {
+      id: "11",
+      question: "How do you envision our relationship in 10 years?",
+      category: "future",
+      difficulty: "deep"
+    },
+    {
+      id: "12",
+      question: "What's something about yourself that you're working on improving?",
+      category: "deep",
+      difficulty: "medium"
+    },
+    {
+      id: "13",
+      question: "What's a boundary you need that you haven't clearly expressed?",
+      category: "relationship",
+      difficulty: "deep"
+    },
+    {
+      id: "14",
+      question: "What's your favorite way to spend a weekend together?",
+      category: "fun",
+      difficulty: "easy"
+    },
+    {
+      id: "15",
+      question: "What's one thing your parents did that you want to do differently in our relationship?",
+      category: "past",
+      difficulty: "deep"
+    },
+    {
+      id: "16",
+      question: "If you could have dinner with anyone, living or dead, who would it be and why?",
+      category: "fun",
+      difficulty: "medium"
+    },
+    {
+      id: "17",
+      question: "What's something I do that annoys you but you've never mentioned?",
+      category: "relationship",
+      difficulty: "deep"
+    },
+    {
+      id: "18",
+      question: "What three words would you use to describe our relationship?",
+      category: "relationship",
+      difficulty: "medium"
+    },
+    {
+      id: "19",
+      question: "What's your love language and how can I better speak it?",
+      category: "relationship",
+      difficulty: "medium"
+    },
+    {
+      id: "20",
+      question: "What's a dream you've given up on that you wish you hadn't?",
+      category: "deep",
+      difficulty: "deep"
+    }
+  ];
+};
+
+// Function to generate AI-powered conversation starters
+export const generateConversationStarters = async (category?: string): Promise<ConversationStarter[]> => {
+  try {
+    const categoryPrompt = category ? `focused on the topic of ${category}` : "on various topics";
+    
+    const response = await callOpenRouter([
+      { 
+        role: "system", 
+        content: "You are a relationship coach specializing in creating conversation starters that help couples connect more deeply." 
+      },
+      { 
+        role: "user", 
+        content: `Generate 5 thoughtful conversation starter questions ${categoryPrompt}. Make them unique and engaging.` 
+      }
+    ]);
+
+    // Parse the AI response to extract conversation starters
+    const text = response.text;
+    const starters: ConversationStarter[] = [];
+    
+    // Simple parser for the expected format
+    const starterRegex = /(\d+\.\s*)?([^\n]+)/g;
+    let match;
+    let counter = 0;
+    
+    while ((match = starterRegex.exec(text)) !== null && counter < 10) {
+      const question = match[2].trim().replace(/^["']|["']$/g, '');
+      
+      if (question) {
+        // Assign a random category and difficulty for AI-generated starters
+        const categories: ConversationStarter['category'][] = ['fun', 'deep', 'relationship', 'future', 'past'];
+        const difficulties: ConversationStarter['difficulty'][] = ['easy', 'medium', 'deep'];
+        
+        starters.push({
+          id: `ai-${Date.now()}-${counter}`,
+          question,
+          category: category as ConversationStarter['category'] || categories[Math.floor(Math.random() * categories.length)],
+          difficulty: difficulties[Math.floor(Math.random() * difficulties.length)]
+        });
+        counter++;
+      }
+    }
+    
+    // If parsing failed, create a fallback starter
+    if (starters.length === 0) {
+      starters.push({
+        id: `ai-${Date.now()}`,
+        question: "What is something new you'd like us to experience together?",
+        category: 'relationship',
+        difficulty: 'medium'
+      });
+    }
+    
+    return starters;
+  } catch (error) {
+    console.error("Error generating conversation starters:", error);
+    // Return fallback starters if API call fails
+    return [
+      {
+        id: `ai-${Date.now()}-1`,
+        question: "What has been your favorite memory with me so far?",
+        category: 'relationship',
+        difficulty: 'easy'
+      },
+      {
+        id: `ai-${Date.now()}-2`,
+        question: "What's something you've always wanted to ask me but haven't?",
+        category: 'deep',
+        difficulty: 'medium'
+      },
+      {
+        id: `ai-${Date.now()}-3`,
+        question: "How would you describe our relationship to someone who doesn't know us?",
+        category: 'relationship',
+        difficulty: 'medium'
+      }
+    ];
   }
 };

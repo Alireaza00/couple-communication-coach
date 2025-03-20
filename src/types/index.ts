@@ -29,3 +29,10 @@ export interface AIResponse {
   text: string;
   model: string;
 }
+
+export interface ConversationStarter {
+  id: string;
+  question: string;
+  category: 'fun' | 'deep' | 'relationship' | 'future' | 'past';
+  difficulty: 'easy' | 'medium' | 'deep';
+}
