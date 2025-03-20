@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { 
   MessageSquare, 
   Brain, 
@@ -18,9 +17,15 @@ import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Dashboard = () => {
+  const { user } = useAuth();
   const [isRecording, setIsRecording] = useState(false);
+  
+  if (!user) {
+    return <Navigate to="/auth?mode=login" />;
+  }
   
   const handleToggleRecording = () => {
     setIsRecording(!isRecording);
@@ -32,12 +37,11 @@ const Dashboard = () => {
       
       <main className="pt-[100px] pb-20">
         <div className="container-tight">
-          {/* Welcome Section */}
           <section className="mb-8">
             <div className="glass rounded-2xl p-8 md:p-12 shadow-sm">
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                 <div>
-                  <h1 className="text-3xl md:text-4xl font-bold">Welcome back, Jessica</h1>
+                  <h1 className="text-3xl md:text-4xl font-bold">Welcome back, {user.displayName || 'User'}</h1>
                   <p className="mt-2 text-foreground/70">Let's continue improving your communication today.</p>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -97,7 +101,6 @@ const Dashboard = () => {
             </div>
           </section>
           
-          {/* Quick Actions Section */}
           <section className="mb-12">
             <h2 className="text-2xl font-bold mb-6">Quick Actions</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -147,7 +150,6 @@ const Dashboard = () => {
             </div>
           </section>
           
-          {/* Recent Activity Section */}
           <section className="mb-12">
             <h2 className="text-2xl font-bold mb-6">Recent Activity</h2>
             <div className="glass rounded-xl shadow-sm overflow-hidden">
@@ -228,7 +230,6 @@ const Dashboard = () => {
             </div>
           </section>
           
-          {/* Next Steps Section */}
           <section>
             <h2 className="text-2xl font-bold mb-6">Recommended For You</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

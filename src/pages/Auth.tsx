@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Mail, Lock, User, Heart } from "lucide-react";
@@ -6,10 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Auth = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { login, signup, user } = useAuth();
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [isLoading, setIsLoading] = useState(false);
   
@@ -20,29 +21,30 @@ const Auth = () => {
   const [partnerEmail, setPartnerEmail] = useState("");
   
   useEffect(() => {
+    // Redirect to dashboard if already logged in
+    if (user) {
+      navigate("/dashboard");
+    }
+    
     // Set auth mode based on URL query param
     const searchParams = new URLSearchParams(location.search);
     const mode = searchParams.get("mode");
     if (mode === "login" || mode === "signup") {
       setAuthMode(mode);
     }
-  }, [location.search]);
+  }, [location.search, user, navigate]);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
     try {
-      // Mock authentication logic - in a real app, this would connect to Supabase
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
       if (authMode === "signup") {
-        toast.success("Account created successfully! Please check your email for verification.");
+        await signup(email, password, name);
+        navigate("/dashboard");
       } else {
-        toast.success("Login successful! Redirecting to dashboard...");
-        setTimeout(() => {
-          navigate("/dashboard");
-        }, 1000);
+        await login(email, password);
+        navigate("/dashboard");
       }
     } catch (error) {
       toast.error("An error occurred. Please try again.");

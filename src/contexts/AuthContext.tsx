@@ -1,5 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { toast } from "sonner";
 
 interface User {
   uid: string;
@@ -38,10 +39,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true);
       setError(null);
+      // Extract name from email for display purposes (temporary)
+      const displayName = email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1);
       // This is a mock implementation
-      const mockUser = { uid: '123456', email };
+      const mockUser = { uid: '123456', email, displayName };
       setUser(mockUser);
       localStorage.setItem('user', JSON.stringify(mockUser));
+      toast.success(`Welcome back, ${displayName}!`);
     } catch (err) {
       setError((err as Error).message);
       throw err;
@@ -58,6 +62,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const mockUser = { uid: '123456', email, displayName: name };
       setUser(mockUser);
       localStorage.setItem('user', JSON.stringify(mockUser));
+      toast.success(`Account created successfully, ${name}!`);
     } catch (err) {
       setError((err as Error).message);
       throw err;
@@ -72,6 +77,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // This is a mock implementation
       setUser(null);
       localStorage.removeItem('user');
+      toast.success("You've been logged out successfully");
     } catch (err) {
       setError((err as Error).message);
       throw err;
@@ -85,7 +91,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
       setError(null);
       // Mock implementation
-      console.log(`Password reset email sent to ${email}`);
+      toast.success(`Password reset email sent to ${email}`);
     } catch (err) {
       setError((err as Error).message);
       throw err;
