@@ -32,7 +32,7 @@ const Hero = () => {
             <Link to="/auth?mode=signup" className="btn-primary flex items-center gap-2 w-full sm:w-auto">
               Get Started <ArrowRight className="h-4 w-4" />
             </Link>
-            <Link to="#how-it-works" className="btn-secondary w-full sm:w-auto">
+            <Link to="/how-it-works" className="btn-secondary w-full sm:w-auto">
               Learn how it works
             </Link>
           </div>
