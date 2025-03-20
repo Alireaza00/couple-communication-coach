@@ -4,7 +4,7 @@ import {
     ArrowLeft,
     Save,
     Copy,
-    Dice,
+    Dice1,
     HelpCircle,
     Plus,
     X,
@@ -52,15 +52,22 @@ const DateNight = () => {
         data: savedDateNights,
         isLoading: isLoadingSavedDateNights,
         refetch,
-    } = useQuery(['dateNights', user?.uid, selectedDate], () => getDateNights(user?.uid, selectedDate), {
+    } = useQuery({
+        queryKey: ['dateNights', user?.uid, selectedDate],
+        queryFn: () => getDateNights(user?.uid, selectedDate),
         enabled: !!user?.uid && !!selectedDate,
     });
 
-    const mutation = useMutation(saveDateNight);
-    const deleteMutation = useMutation(deleteDateNight);
+    const mutation = useMutation({
+        mutationFn: saveDateNight
+    });
+    
+    const deleteMutation = useMutation({
+        mutationFn: deleteDateNight
+    });
 
     useEffect(() => {
-        if (savedDateNights && savedDateNights.length > 0) {
+        if (savedDateNights && Array.isArray(savedDateNights) && savedDateNights.length > 0) {
             setDateNightIdeas(savedDateNights);
         } else {
             setDateNightIdeas([]);
@@ -222,8 +229,8 @@ const DateNight = () => {
 
         // @ts-ignore
         import('html2canvas').then(html2canvas => {
-            html2canvas(element, { scale: 2 })
-                .then((canvas) => {
+            html2canvas.default(element, { scale: 2 })
+                .then((canvas: HTMLCanvasElement) => {
                     const link = document.createElement('a');
                     link.href = canvas.toDataURL('image/png');
                     link.download = `date-night-ideas-${format(new Date(), 'yyyyMMdd')}.png`;
@@ -232,7 +239,7 @@ const DateNight = () => {
                     document.body.removeChild(link);
                     toast.success("Date night ideas saved as image!");
                 })
-                .catch(err => {
+                .catch((err: Error) => {
                     console.error("Could not save as image: ", err);
                     toast.error("Failed to save date night ideas as image. Please try again.");
                 });
@@ -241,12 +248,12 @@ const DateNight = () => {
 
     useEffect(() => {
         const copyButton = document.getElementById('copyButton');
-        if (copyButton instanceof HTMLElement) {
+        if (copyButton) {
             copyButton.click();
         }
 
         const saveButton = document.getElementById('saveButton');
-        if (saveButton instanceof HTMLElement) {
+        if (saveButton) {
             saveButton.click();
         }
     }, []);
@@ -358,7 +365,7 @@ const DateNight = () => {
                                 disabled={isLoadingIdeas}
                             >
                                 {isLoadingIdeas ? "Generating..." : "Generate Ideas"}
-                                <Dice className="h-4 w-4" />
+                                <Dice1 className="h-4 w-4" />
                             </button>
                             <button
                                 onClick={handleSaveDateNight}
