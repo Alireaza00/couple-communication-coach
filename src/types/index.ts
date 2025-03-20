@@ -36,3 +36,15 @@ export interface ConversationStarter {
   category: 'fun' | 'deep' | 'relationship' | 'future' | 'past';
   difficulty: 'easy' | 'medium' | 'deep';
 }
+
+export interface CheckIn {
+  id: string;
+  date: string;
+  mood: number;
+  highlight: string;
+  challenge: string;
+  gratitude: string;
+  needsSupport: boolean;
+  supportDetails?: string;
+  userId: string;
+}

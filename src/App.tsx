@@ -14,6 +14,7 @@ import DateNight from "./pages/DateNight";
 import Progress from "./pages/Progress";
 import HowItWorks from "./pages/HowItWorks";
 import ConversationStarters from "./pages/ConversationStarters";
+import DailyCheckIn from "./pages/DailyCheckIn";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/date-night" element={<DateNight />} />
             <Route path="/progress" element={<Progress />} />
             <Route path="/conversation-starters" element={<ConversationStarters />} />
+            <Route path="/daily-check-in" element={<DailyCheckIn />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
