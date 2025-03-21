@@ -1,13 +1,20 @@
 
-import { useState, useEffect } from 'react';
-import { Mic, Square, Clock, Play, Trash2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Mic, Square, Clock, Play, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/components/ui/use-toast';
+import { analyzeCommunication } from '@/services/api';
 
-const AudioRecorder = () => {
+const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
+  const { toast } = useToast();
   const [isRecording, setIsRecording] = useState(false);
   const [duration, setDuration] = useState(0);
-  const [recordings, setRecordings] = useState<{ id: number; duration: number }[]>([]);
+  const [recordings, setRecordings] = useState<{ id: number; duration: number; blob?: Blob }[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   
   useEffect(() => {
     let interval: number;
@@ -19,18 +26,41 @@ const AudioRecorder = () => {
     return () => clearInterval(interval);
   }, [isRecording]);
   
-  const handleStartRecording = () => {
-    setIsRecording(true);
-    setDuration(0);
+  const handleStartRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+      
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+      
+      mediaRecorderRef.current.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        const recording = { id: Date.now(), duration, blob: audioBlob };
+        setRecordings(prev => [...prev, recording]);
+        stream.getTracks().forEach(track => track.stop());
+      };
+      
+      mediaRecorderRef.current.start();
+      setIsRecording(true);
+      setDuration(0);
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      toast({
+        title: "Recording Error",
+        description: "Could not access your microphone. Please check permissions.",
+        variant: "destructive"
+      });
+    }
   };
   
   const handleStopRecording = () => {
-    setIsRecording(false);
-    if (duration > 0) {
-      const newRecording = { id: Date.now(), duration };
-      setRecordings(prev => [...prev, newRecording]);
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
     }
-    setDuration(0);
   };
   
   const formatTime = (seconds: number) => {
@@ -41,6 +71,59 @@ const AudioRecorder = () => {
   
   const handleDeleteRecording = (id: number) => {
     setRecordings(prev => prev.filter(recording => recording.id !== id));
+  };
+  
+  const handlePlayRecording = (id: number) => {
+    const recording = recordings.find(rec => rec.id === id);
+    if (recording?.blob) {
+      const url = URL.createObjectURL(recording.blob);
+      const audio = new Audio(url);
+      audio.play();
+    }
+  };
+  
+  const analyzeRecording = async (id: number) => {
+    try {
+      setIsProcessing(true);
+      const recording = recordings.find(rec => rec.id === id);
+      if (!recording?.blob) {
+        throw new Error("Recording not found");
+      }
+      
+      // For demo purposes, we'll use a mock transcript
+      // In a real app, you'd send the audio to a transcription API
+      const mockTranscript = `
+Jessica: I felt a bit overwhelmed at work today. The project deadline got moved up and now I'm worried about getting everything done.
+Mark: That sounds stressful. Why don't you just ask for an extension?
+Jessica: Well, it's not that simple. I've already—
+Mark: You always say that, but have you actually tried asking?
+Jessica: I feel like you're not really understanding what I'm saying. This is important to me.
+Mark: I'm sorry. You're right. Can you help me understand what's making this so difficult?
+`;
+
+      // Now analyze the transcript
+      const analysisResult = await analyzeCommunication(mockTranscript);
+      
+      // Notify the parent component with the analysis results
+      onTranscriptAnalyzed({
+        transcript: mockTranscript,
+        analysis: analysisResult.text
+      });
+      
+      toast({
+        title: "Analysis Complete",
+        description: "Your conversation has been analyzed successfully."
+      });
+    } catch (error) {
+      console.error('Error analyzing recording:', error);
+      toast({
+        title: "Analysis Error",
+        description: "Could not analyze your recording. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
   
   return (
@@ -108,11 +191,27 @@ const AudioRecorder = () => {
                 className="flex items-center justify-between py-2 px-4 bg-gray-50 rounded-lg"
               >
                 <div className="flex items-center">
-                  <Play className="h-4 w-4 text-gray-500 mr-2" />
+                  <button
+                    onClick={() => handlePlayRecording(recording.id)}
+                    className="text-gray-500 hover:text-primary"
+                  >
+                    <Play className="h-4 w-4 mr-2" />
+                  </button>
                   <span className="text-sm">Recording {new Date(recording.id).toLocaleTimeString()}</span>
                 </div>
-                <div className="flex items-center">
-                  <span className="text-xs text-gray-500 mr-4">{formatTime(recording.duration)}</span>
+                <div className="flex items-center space-x-3">
+                  <span className="text-xs text-gray-500">{formatTime(recording.duration)}</span>
+                  <Button
+                    onClick={() => analyzeRecording(recording.id)}
+                    variant="outline"
+                    size="sm"
+                    disabled={isProcessing}
+                    className="text-xs h-8"
+                  >
+                    {isProcessing ? 
+                      <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Analyzing...</> : 
+                      'Analyze'}
+                  </Button>
                   <button 
                     onClick={() => handleDeleteRecording(recording.id)}
                     className="text-gray-400 hover:text-red-500"
