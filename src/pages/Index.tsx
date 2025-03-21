@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { 
@@ -9,7 +8,8 @@ import {
   Calendar, 
   ShieldCheck,
   ArrowRight, 
-  CheckCircle2
+  CheckCircle2,
+  Heart
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
@@ -56,6 +56,12 @@ const Index = () => {
           </div>
           
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+            <FeatureCard
+              title="Daily Relationship Check-in"
+              description="Reflect on your relationship daily to build awareness and improve connection with your partner."
+              icon={Heart}
+              delay={50}
+            />
             <FeatureCard
               title="Communication Analysis"
               description="Get insights into your communication patterns and learn how to express yourself more effectively."
@@ -326,6 +332,9 @@ const Index = () => {
               <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
                 <Link to="/auth?mode=signup" className="btn-primary flex items-center gap-2 w-full sm:w-auto">
                   Get Started <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link to="/daily-check-in" className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-md shadow-sm flex items-center gap-2 w-full sm:w-auto">
+                  Try Daily Check-in <Heart className="h-4 w-4" />
                 </Link>
               </div>
               

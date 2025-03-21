@@ -92,6 +92,16 @@ const Navbar = () => {
                 >
                   Progress
                 </Link>
+                <Link
+                  to="/daily-check-in"
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    location.pathname === "/daily-check-in"
+                      ? "text-primary"
+                      : "text-foreground/70 hover:text-primary"
+                  }`}
+                >
+                  Daily Check-in
+                </Link>
                 <div className="ml-2">
                   <AISettings />
                 </div>
@@ -213,6 +223,17 @@ const Navbar = () => {
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Progress
+                </Link>
+                <Link
+                  to="/daily-check-in"
+                  className={`block px-3 py-2 rounded-md text-base font-medium ${
+                    location.pathname === "/daily-check-in"
+                      ? "text-primary"
+                      : "text-foreground/70 hover:text-primary"
+                  }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Daily Check-in
                 </Link>
                 <button
                   onClick={() => {

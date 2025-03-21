@@ -93,9 +93,11 @@ const Dashboard = () => {
                     )}
                   </Button>
                   
-                  <Button variant="outline" className="h-12 px-6 border-primary/20">
-                    <RefreshCw className="h-5 w-5 mr-2" /> Daily Check-in
-                  </Button>
+                  <Link to="/daily-check-in">
+                    <Button variant="outline" className="h-12 px-6 border-primary/20">
+                      <RefreshCw className="h-5 w-5 mr-2" /> Daily Check-in
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </div>
