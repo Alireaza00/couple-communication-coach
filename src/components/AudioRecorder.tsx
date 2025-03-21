@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Mic, Square, Clock, Play, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,14 +17,12 @@ const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   
-  // Check for microphone permission when component mounts
   useEffect(() => {
     const checkMicrophonePermission = async () => {
       try {
         const permissionResult = await navigator.permissions.query({ name: 'microphone' as PermissionName });
         setPermissionStatus(permissionResult.state as 'granted' | 'denied' | 'prompt');
         
-        // Listen for permission changes
         permissionResult.onchange = () => {
           setPermissionStatus(permissionResult.state as 'granted' | 'denied' | 'prompt');
         };
@@ -49,7 +46,6 @@ const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
   
   const handleStartRecording = async () => {
     try {
-      // This will trigger the permission prompt if not already granted
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setPermissionStatus('granted');
       
@@ -135,8 +131,6 @@ const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
         description: "This is a demo. In a real app, your actual audio would be transcribed. Instead, we'll show you simulated results.",
       });
       
-      // For demo purposes, we use a mock transcript
-      // In a real app, you'd send the audio to a speech-to-text API like Google Speech, AWS Transcribe, or AssemblyAI
       const mockTranscript = `
 Jessica: I felt a bit overwhelmed at work today. The project deadline got moved up and now I'm worried about getting everything done.
 Mark: That sounds stressful. Why don't you just ask for an extension?
@@ -146,17 +140,13 @@ Jessica: I feel like you're not really understanding what I'm saying. This is im
 Mark: I'm sorry. You're right. Can you help me understand what's making this so difficult?
 `;
 
-      // Display transcription step notification
       toast({
         title: "DEMO MODE: Transcription Complete",
         description: "This is a simulated transcript, not your actual recording. In a real app, your conversation would be analyzed.",
       });
 
-      // Now analyze the transcript
-      // In a real app, this would call an AI model like OpenAI's GPT or a specialized conversation analysis API
       const analysisResult = await analyzeCommunication(mockTranscript);
       
-      // Notify the parent component with the analysis results
       onTranscriptAnalyzed({
         transcript: mockTranscript,
         analysis: analysisResult.text
@@ -200,7 +190,7 @@ Mark: I'm sorry. You're right. Can you help me understand what's making this so 
       
       {renderMicrophonePermissionAlert()}
       
-      <Alert variant="warning" className="mb-4 bg-amber-50 border-amber-200">
+      <Alert className="mb-4 bg-amber-50 border-amber-200">
         <AlertCircle className="h-4 w-4 text-amber-600" />
         <AlertTitle className="text-amber-800">Demo Mode Active</AlertTitle>
         <AlertDescription className="text-amber-700">
