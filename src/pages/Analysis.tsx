@@ -53,18 +53,19 @@ const Analysis = () => {
               Get personalized insights about your communication patterns and learn how to express yourself more effectively.
             </p>
             
-            <Alert className="mb-4">
-              <Info className="h-4 w-4" />
-              <AlertTitle>How Communication Analysis Works</AlertTitle>
-              <AlertDescription>
+            <Alert className="mb-4 border-2 border-amber-300 bg-amber-50">
+              <Info className="h-4 w-4 text-amber-600" />
+              <AlertTitle className="text-amber-800 font-bold">DEMO MODE: Simulated Analysis Only</AlertTitle>
+              <AlertDescription className="text-amber-700">
+                <p className="font-medium mb-2">In this demo version:</p>
                 <ol className="mt-2 ml-4 space-y-1 list-decimal">
-                  <li>Record a conversation using the tool below (will request microphone access)</li>
-                  <li>Our AI transcribes your conversation into text</li>
-                  <li>The transcript is analyzed for communication patterns</li>
-                  <li>You'll receive personalized insights and improvement suggestions</li>
+                  <li>Your recordings are not actually processed or sent to any server</li>
+                  <li>The transcript is a pre-written example conversation</li>
+                  <li>The analysis is simulated and not based on your actual conversation</li>
+                  <li>Your data stays private and is never sent anywhere</li>
                 </ol>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  <strong>Note:</strong> In this demo, we use simulated transcription and analysis to showcase the feature.
+                <p className="mt-2 text-sm font-medium">
+                  The full version would analyze your actual conversations, but the demo shows the concept with simulated data.
                 </p>
               </AlertDescription>
             </Alert>
@@ -83,7 +84,7 @@ const Analysis = () => {
                   <h3 className="font-medium">Communication Score Overview</h3>
                 </div>
                 <p className="text-sm text-foreground/70 mb-6">
-                  Based on your last conversation {analysisData ? '(Just Analyzed)' : '(May 12, 2023 • 15 minutes)'}
+                  Based on your last conversation {analysisData ? '(Simulated Analysis)' : '(May 12, 2023 • 15 minutes)'}
                 </p>
                 
                 <CommunicationChart data={communicationData} />

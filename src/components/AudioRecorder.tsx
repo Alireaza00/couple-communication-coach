@@ -131,11 +131,11 @@ const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
       }
       
       toast({
-        title: "Processing Audio",
-        description: "Converting your conversation to text and analyzing communication patterns...",
+        title: "DEMO MODE: Processing Audio",
+        description: "This is a demo. In a real app, your actual audio would be transcribed. Instead, we'll show you simulated results.",
       });
       
-      // For demo purposes, we'll use a mock transcript
+      // For demo purposes, we use a mock transcript
       // In a real app, you'd send the audio to a speech-to-text API like Google Speech, AWS Transcribe, or AssemblyAI
       const mockTranscript = `
 Jessica: I felt a bit overwhelmed at work today. The project deadline got moved up and now I'm worried about getting everything done.
@@ -148,8 +148,8 @@ Mark: I'm sorry. You're right. Can you help me understand what's making this so 
 
       // Display transcription step notification
       toast({
-        title: "Transcription Complete",
-        description: "Now analyzing communication patterns in your conversation...",
+        title: "DEMO MODE: Transcription Complete",
+        description: "This is a simulated transcript, not your actual recording. In a real app, your conversation would be analyzed.",
       });
 
       // Now analyze the transcript
@@ -163,8 +163,8 @@ Mark: I'm sorry. You're right. Can you help me understand what's making this so 
       });
       
       toast({
-        title: "Analysis Complete",
-        description: "Your conversation has been analyzed successfully.",
+        title: "DEMO MODE: Analysis Complete",
+        description: "The simulated conversation has been analyzed. This is not based on your actual recording.",
       });
     } catch (error) {
       console.error('Error analyzing recording:', error);
@@ -199,6 +199,15 @@ Mark: I'm sorry. You're right. Can you help me understand what's making this so 
       <h3 className="font-medium mb-4">Record Your Conversation</h3>
       
       {renderMicrophonePermissionAlert()}
+      
+      <Alert variant="warning" className="mb-4 bg-amber-50 border-amber-200">
+        <AlertCircle className="h-4 w-4 text-amber-600" />
+        <AlertTitle className="text-amber-800">Demo Mode Active</AlertTitle>
+        <AlertDescription className="text-amber-700">
+          This is a demonstration only. Your actual recordings are not being analyzed. 
+          When you click "Analyze", you'll see a simulated transcript and analysis.
+        </AlertDescription>
+      </Alert>
       
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
@@ -254,8 +263,8 @@ Mark: I'm sorry. You're right. Can you help me understand what's making this so 
 
       <div className="text-sm text-foreground/60 mb-6">
         <strong>How it works:</strong> When you start recording, your browser will ask for microphone permission. After 
-        recording your conversation, our AI will transcribe the audio and analyze communication patterns to provide 
-        insights. For this demo, we use simulated transcription to showcase the feature.
+        recording your conversation, a real app would transcribe the audio and analyze communication patterns. 
+        <strong className="text-amber-600"> In this demo, we do not process your actual audio but instead display simulated results.</strong>
       </div>
       
       {recordings.length > 0 && (
@@ -288,7 +297,7 @@ Mark: I'm sorry. You're right. Can you help me understand what's making this so 
                   >
                     {isProcessing ? 
                       <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Analyzing...</> : 
-                      'Analyze'}
+                      'Analyze (Demo)'}
                   </Button>
                   <button 
                     onClick={() => handleDeleteRecording(recording.id)}

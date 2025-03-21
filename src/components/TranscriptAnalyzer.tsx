@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface TranscriptAnalyzerProps {
   transcript?: string;
@@ -67,7 +68,7 @@ const TranscriptAnalyzer = ({ transcript, analysisResult }: TranscriptAnalyzerPr
     return (
       <div className="glass rounded-xl p-6 shadow-sm text-center">
         <p className="text-foreground/70">
-          Record a conversation or upload an audio file to see your analysis here.
+          Record a conversation and click "Analyze" to see your simulated analysis here.
         </p>
       </div>
     );
@@ -75,6 +76,15 @@ const TranscriptAnalyzer = ({ transcript, analysisResult }: TranscriptAnalyzerPr
   
   return (
     <>
+      <Alert className="mb-6 bg-blue-50 border-blue-200">
+        <InfoIcon className="h-4 w-4 text-blue-600" />
+        <AlertTitle className="text-blue-800">Demo Transcript & Analysis</AlertTitle>
+        <AlertDescription className="text-blue-700">
+          The transcript and analysis shown below are simulated examples, not based on your actual recording.
+          In a full version, your real conversation would be analyzed.
+        </AlertDescription>
+      </Alert>
+      
       {/* Key Insights Section */}
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">
@@ -157,7 +167,7 @@ const TranscriptAnalyzer = ({ transcript, analysisResult }: TranscriptAnalyzerPr
           <div className="glass rounded-xl p-6 shadow-sm">
             <div className="flex items-center mb-4">
               <FileText className="h-5 w-5 text-primary mr-2" />
-              <h3 className="font-medium">Conversation Transcript</h3>
+              <h3 className="font-medium">Conversation Transcript (Demo)</h3>
             </div>
             <div className="bg-gray-50 rounded-lg p-4 max-h-[300px] overflow-y-auto">
               <div className="space-y-4">
@@ -192,6 +202,9 @@ const TranscriptAnalyzer = ({ transcript, analysisResult }: TranscriptAnalyzerPr
                   </div>
                 )}
               </div>
+            </div>
+            <div className="mt-2 text-xs text-amber-600 font-medium">
+              Note: This is a simulated transcript, not your actual recording.
             </div>
             <div className="mt-4 flex justify-end">
               <Button variant="outline" size="sm">
