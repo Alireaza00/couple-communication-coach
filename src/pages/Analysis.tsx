@@ -3,9 +3,13 @@ import { useState } from "react";
 import { 
   MessageSquare, 
   Brain, 
-  ArrowRight
+  ArrowRight,
+  Mic,
+  BarChart3,
+  Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AudioRecorder from "@/components/AudioRecorder";
@@ -43,11 +47,27 @@ const Analysis = () => {
       <main className="pt-[100px] pb-20">
         <div className="container-tight">
           {/* Header Section */}
-          <section className="mb-12">
+          <section className="mb-8">
             <h1 className="text-3xl md:text-4xl font-bold mb-2">Communication Analysis</h1>
-            <p className="text-foreground/70 max-w-2xl">
+            <p className="text-foreground/70 max-w-2xl mb-4">
               Get personalized insights about your communication patterns and learn how to express yourself more effectively.
             </p>
+            
+            <Alert className="mb-4">
+              <Info className="h-4 w-4" />
+              <AlertTitle>How Communication Analysis Works</AlertTitle>
+              <AlertDescription>
+                <ol className="mt-2 ml-4 space-y-1 list-decimal">
+                  <li>Record a conversation using the tool below (will request microphone access)</li>
+                  <li>Our AI transcribes your conversation into text</li>
+                  <li>The transcript is analyzed for communication patterns</li>
+                  <li>You'll receive personalized insights and improvement suggestions</li>
+                </ol>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  <strong>Note:</strong> In this demo, we use simulated transcription and analysis to showcase the feature.
+                </p>
+              </AlertDescription>
+            </Alert>
           </section>
           
           {/* Recorder Section */}
@@ -58,7 +78,10 @@ const Analysis = () => {
               </div>
               
               <div className="lg:col-span-2 glass rounded-xl p-6 shadow-sm">
-                <h3 className="font-medium mb-4">Communication Score Overview</h3>
+                <div className="flex items-center gap-2 mb-4">
+                  <BarChart3 className="h-5 w-5 text-primary" />
+                  <h3 className="font-medium">Communication Score Overview</h3>
+                </div>
                 <p className="text-sm text-foreground/70 mb-6">
                   Based on your last conversation {analysisData ? '(Just Analyzed)' : '(May 12, 2023 • 15 minutes)'}
                 </p>

@@ -1,10 +1,11 @@
 
 import { useState, useEffect, useRef } from 'react';
-import { Mic, Square, Clock, Play, Trash2, Loader2 } from 'lucide-react';
+import { Mic, Square, Clock, Play, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
 import { analyzeCommunication } from '@/services/api';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
   const { toast } = useToast();
@@ -12,9 +13,29 @@ const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
   const [duration, setDuration] = useState(0);
   const [recordings, setRecordings] = useState<{ id: number; duration: number; blob?: Blob }[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [permissionStatus, setPermissionStatus] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  
+  // Check for microphone permission when component mounts
+  useEffect(() => {
+    const checkMicrophonePermission = async () => {
+      try {
+        const permissionResult = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+        setPermissionStatus(permissionResult.state as 'granted' | 'denied' | 'prompt');
+        
+        // Listen for permission changes
+        permissionResult.onchange = () => {
+          setPermissionStatus(permissionResult.state as 'granted' | 'denied' | 'prompt');
+        };
+      } catch (error) {
+        console.log('Permission API not supported, will check on recording attempt');
+      }
+    };
+    
+    checkMicrophonePermission();
+  }, []);
   
   useEffect(() => {
     let interval: number;
@@ -28,7 +49,10 @@ const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
   
   const handleStartRecording = async () => {
     try {
+      // This will trigger the permission prompt if not already granted
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setPermissionStatus('granted');
+      
       mediaRecorderRef.current = new MediaRecorder(stream);
       audioChunksRef.current = [];
       
@@ -46,11 +70,18 @@ const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
       mediaRecorderRef.current.start();
       setIsRecording(true);
       setDuration(0);
+      
+      toast({
+        title: "Recording Started",
+        description: "Your microphone is now active and recording your conversation.",
+      });
     } catch (error) {
       console.error('Error starting recording:', error);
+      setPermissionStatus('denied');
+      
       toast({
-        title: "Recording Error",
-        description: "Could not access your microphone. Please check permissions.",
+        title: "Microphone Access Denied",
+        description: "Please allow microphone access in your browser settings to use this feature.",
         variant: "destructive"
       });
     }
@@ -60,6 +91,11 @@ const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+      
+      toast({
+        title: "Recording Stopped",
+        description: "Your conversation has been recorded. You can now analyze it.",
+      });
     }
   };
   
@@ -71,6 +107,10 @@ const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
   
   const handleDeleteRecording = (id: number) => {
     setRecordings(prev => prev.filter(recording => recording.id !== id));
+    toast({
+      title: "Recording Deleted",
+      description: "The recording has been removed.",
+    });
   };
   
   const handlePlayRecording = (id: number) => {
@@ -90,8 +130,13 @@ const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
         throw new Error("Recording not found");
       }
       
+      toast({
+        title: "Processing Audio",
+        description: "Converting your conversation to text and analyzing communication patterns...",
+      });
+      
       // For demo purposes, we'll use a mock transcript
-      // In a real app, you'd send the audio to a transcription API
+      // In a real app, you'd send the audio to a speech-to-text API like Google Speech, AWS Transcribe, or AssemblyAI
       const mockTranscript = `
 Jessica: I felt a bit overwhelmed at work today. The project deadline got moved up and now I'm worried about getting everything done.
 Mark: That sounds stressful. Why don't you just ask for an extension?
@@ -101,7 +146,14 @@ Jessica: I feel like you're not really understanding what I'm saying. This is im
 Mark: I'm sorry. You're right. Can you help me understand what's making this so difficult?
 `;
 
+      // Display transcription step notification
+      toast({
+        title: "Transcription Complete",
+        description: "Now analyzing communication patterns in your conversation...",
+      });
+
       // Now analyze the transcript
+      // In a real app, this would call an AI model like OpenAI's GPT or a specialized conversation analysis API
       const analysisResult = await analyzeCommunication(mockTranscript);
       
       // Notify the parent component with the analysis results
@@ -112,7 +164,7 @@ Mark: I'm sorry. You're right. Can you help me understand what's making this so 
       
       toast({
         title: "Analysis Complete",
-        description: "Your conversation has been analyzed successfully."
+        description: "Your conversation has been analyzed successfully.",
       });
     } catch (error) {
       console.error('Error analyzing recording:', error);
@@ -126,9 +178,27 @@ Mark: I'm sorry. You're right. Can you help me understand what's making this so 
     }
   };
   
+  const renderMicrophonePermissionAlert = () => {
+    if (permissionStatus === 'denied') {
+      return (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Microphone Access Required</AlertTitle>
+          <AlertDescription>
+            This feature requires microphone access to record your conversations. 
+            Please allow microphone access in your browser settings and refresh the page.
+          </AlertDescription>
+        </Alert>
+      );
+    }
+    return null;
+  };
+  
   return (
     <div className="glass rounded-xl p-6 shadow-sm">
       <h3 className="font-medium mb-4">Record Your Conversation</h3>
+      
+      {renderMicrophonePermissionAlert()}
       
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
@@ -174,11 +244,18 @@ Mark: I'm sorry. You're right. Can you help me understand what's making this so 
               variant="default"
               size="sm"
               className="h-10"
+              disabled={permissionStatus === 'denied'}
             >
               <Mic className="h-4 w-4 mr-2" /> Start Recording
             </Button>
           )}
         </div>
+      </div>
+
+      <div className="text-sm text-foreground/60 mb-6">
+        <strong>How it works:</strong> When you start recording, your browser will ask for microphone permission. After 
+        recording your conversation, our AI will transcribe the audio and analyze communication patterns to provide 
+        insights. For this demo, we use simulated transcription to showcase the feature.
       </div>
       
       {recordings.length > 0 && (
@@ -194,6 +271,7 @@ Mark: I'm sorry. You're right. Can you help me understand what's making this so 
                   <button
                     onClick={() => handlePlayRecording(recording.id)}
                     className="text-gray-500 hover:text-primary"
+                    title="Play recording"
                   >
                     <Play className="h-4 w-4 mr-2" />
                   </button>
@@ -215,6 +293,7 @@ Mark: I'm sorry. You're right. Can you help me understand what's making this so 
                   <button 
                     onClick={() => handleDeleteRecording(recording.id)}
                     className="text-gray-400 hover:text-red-500"
+                    title="Delete recording"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -224,10 +303,6 @@ Mark: I'm sorry. You're right. Can you help me understand what's making this so 
           </div>
         </div>
       )}
-      
-      <div className="mt-4 text-sm text-foreground/60">
-        Record a conversation with your partner to receive AI-powered communication analysis and personalized insights.
-      </div>
     </div>
   );
 };
