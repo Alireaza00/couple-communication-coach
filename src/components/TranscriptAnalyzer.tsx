@@ -30,6 +30,9 @@ interface Insight {
 const TranscriptAnalyzer = ({ transcript, analysisResult }: TranscriptAnalyzerProps) => {
   const [expandedInsight, setExpandedInsight] = useState<number | null>(null);
   
+  // Check if this is a demo transcript or real data
+  const isDemoTranscript = !transcript || transcript.includes("Jessica: I felt a bit overwhelmed at work today");
+  
   // Parse insights from the AI analysis
   const parseInsights = (text: string | undefined): Insight[] => {
     if (!text) return defaultInsights;
@@ -76,14 +79,16 @@ const TranscriptAnalyzer = ({ transcript, analysisResult }: TranscriptAnalyzerPr
   
   return (
     <>
-      <Alert className="mb-6 bg-blue-50 border-blue-200">
-        <InfoIcon className="h-4 w-4 text-blue-600" />
-        <AlertTitle className="text-blue-800">Demo Transcript & Analysis</AlertTitle>
-        <AlertDescription className="text-blue-700">
-          The transcript and analysis shown below are simulated examples, not based on your actual recording.
-          In a full version, your real conversation would be analyzed.
-        </AlertDescription>
-      </Alert>
+      {isDemoTranscript && (
+        <Alert className="mb-6 bg-blue-50 border-blue-200">
+          <InfoIcon className="h-4 w-4 text-blue-600" />
+          <AlertTitle className="text-blue-800">Demo Transcript & Analysis</AlertTitle>
+          <AlertDescription className="text-blue-700">
+            The transcript and analysis shown below are simulated examples, not based on your actual recording.
+            In a full version, your real conversation would be analyzed.
+          </AlertDescription>
+        </Alert>
+      )}
       
       {/* Key Insights Section */}
       <section className="mb-12">
@@ -167,7 +172,7 @@ const TranscriptAnalyzer = ({ transcript, analysisResult }: TranscriptAnalyzerPr
           <div className="glass rounded-xl p-6 shadow-sm">
             <div className="flex items-center mb-4">
               <FileText className="h-5 w-5 text-primary mr-2" />
-              <h3 className="font-medium">Conversation Transcript (Demo)</h3>
+              <h3 className="font-medium">Conversation Transcript {isDemoTranscript ? "(Demo)" : ""}</h3>
             </div>
             <div className="bg-gray-50 rounded-lg p-4 max-h-[300px] overflow-y-auto">
               <div className="space-y-4">
@@ -203,9 +208,11 @@ const TranscriptAnalyzer = ({ transcript, analysisResult }: TranscriptAnalyzerPr
                 )}
               </div>
             </div>
-            <div className="mt-2 text-xs text-amber-600 font-medium">
-              Note: This is a simulated transcript, not your actual recording.
-            </div>
+            {isDemoTranscript && (
+              <div className="mt-2 text-xs text-amber-600 font-medium">
+                Note: This is a simulated transcript, not your actual recording.
+              </div>
+            )}
             <div className="mt-4 flex justify-end">
               <Button variant="outline" size="sm">
                 View Full Transcript

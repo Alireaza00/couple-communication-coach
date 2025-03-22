@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Mic, Square, Clock, Play, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -51,7 +50,6 @@ const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setPermissionStatus('granted');
       
-      // Use proper audio format for better transcription
       mediaRecorderRef.current = new MediaRecorder(stream, {
         mimeType: 'audio/webm'
       });
@@ -62,7 +60,6 @@ const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
       };
       
       mediaRecorderRef.current.onstop = () => {
-        // Create Blob with proper MIME type
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         console.log('Recording complete. Blob created:', { 
           size: audioBlob.size, 
@@ -152,19 +149,22 @@ const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
             type: recording.blob.type
           });
           
-          // Call the transcription API service with updated parameters
-          transcript = await transcribeAudio(recording.blob);
+          const transcriptionResult = await transcribeAudio(recording.blob);
+          
+          transcript = typeof transcriptionResult === 'string' 
+            ? transcriptionResult 
+            : JSON.stringify(transcriptionResult);
+          
+          console.log("Transcription result:", transcript);
+          
+          if (!transcript || (typeof transcript === 'string' && transcript.trim() === '')) {
+            throw new Error("Empty transcript received");
+          }
           
           toast({
             title: "Transcription Complete",
             description: "Your recording has been successfully transcribed.",
           });
-          
-          console.log("Transcription result:", transcript);
-          
-          if (!transcript || transcript.trim() === '') {
-            throw new Error("Empty transcript received");
-          }
         } catch (error) {
           console.error('Transcription error:', error);
           toast({
@@ -172,18 +172,11 @@ const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
             description: "Could not transcribe your recording. Using fallback mode.",
             variant: "destructive"
           });
-          // Use mock transcript as a fallback
-          transcript = `
-Jessica: I felt a bit overwhelmed at work today. The project deadline got moved up and now I'm worried about getting everything done.
-Mark: That sounds stressful. Why don't you just ask for an extension?
-Jessica: Well, it's not that simple. I've already—
-Mark: You always say that, but have you actually tried asking?
-Jessica: I feel like you're not really understanding what I'm saying. This is important to me.
-Mark: I'm sorry. You're right. Can you help me understand what's making this so difficult?
-`;
+          isTranscriptionEnabled = false;
         }
-      } else {
-        // Use mock transcript when transcription is disabled
+      }
+      
+      if (!isTranscriptionEnabled || transcript === '') {
         transcript = `
 Jessica: I felt a bit overwhelmed at work today. The project deadline got moved up and now I'm worried about getting everything done.
 Mark: That sounds stressful. Why don't you just ask for an extension?
