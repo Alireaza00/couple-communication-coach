@@ -120,12 +120,21 @@ export const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
     const data = await response.json();
     console.log('Gladia API success response:', data);
     
-    // Handle the response format based on Gladia's API documentation
-    if (data.prediction) {
+    // Handle the new response format from Gladia API
+    if (Array.isArray(data)) {
+      // New format: array of segments with transcription property
+      return data
+        .filter(segment => segment && typeof segment.transcription === 'string')
+        .map(segment => segment.transcription)
+        .join(' ');
+    } else if (data.prediction) {
+      // Old format option 1
       return data.prediction;
     } else if (data.result && data.result.transcription) {
+      // Old format option 2
       return data.result.transcription;
     } else if (data.transcription) {
+      // Old format option 3
       return data.transcription;
     } else {
       console.error('Unexpected Gladia API response format:', data);
