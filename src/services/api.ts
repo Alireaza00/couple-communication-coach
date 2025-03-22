@@ -1,4 +1,3 @@
-
 import { DateNightIdea, OpenRouterMessage, AIResponse, ConversationStarter } from "@/types";
 
 // Placeholder function for fetching date nights
@@ -35,7 +34,7 @@ export const generateDateNightIdeas = async (): Promise<DateNightIdea[]> => {
     const ideas: DateNightIdea[] = [];
     
     // Simple parser for the expected format
-    const ideaRegex = /(\d+\.\s*)?([^\n]+)\n([^]*?)(?=\n\d+\.|$)/g;
+    const ideaRegex = /(\d+\.\s*)?([^\n]+)\n([^]*?)(?=\n\d+|$)/g;
     let match;
     let counter = 0;
     
@@ -86,45 +85,54 @@ export const generateDateNightIdeas = async (): Promise<DateNightIdea[]> => {
   }
 };
 
-// Function to transcribe audio using Galadia API
+// Function to transcribe audio using Gladia API
 export const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
   try {
     const apiKey = '93a3db91-f8d6-4bc9-9cac-92fbe76c50e1'; // Updated API key
     const formData = new FormData();
-    formData.append('file', audioBlob, 'audio.wav');
     
-    console.log('Sending audio to Galadia API...');
+    // Ensure we're sending the blob with the correct filename and MIME type
+    formData.append('audio', audioBlob, 'recording.wav');
     
-    const response = await fetch('https://api.gladia.io/v2/transcription', {
+    console.log('Preparing to send audio to Gladia API...', {
+      blobSize: audioBlob.size,
+      blobType: audioBlob.type
+    });
+    
+    // Use the correct endpoint and API version
+    const response = await fetch('https://api.gladia.io/audio/text/audio-transcription', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`
+        'x-gladia-key': apiKey,
+        // Don't set Content-Type header as it will be set automatically with the correct boundary for multipart/form-data
       },
       body: formData
     });
     
+    console.log('Gladia API response status:', response.status);
+    
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Galadia API response:', response.status, errorText);
-      throw new Error(`Galadia API error: ${response.status} - ${errorText || 'Unknown error'}`);
+      console.error('Gladia API error response:', response.status, errorText);
+      throw new Error(`Gladia API error: ${response.status} - ${errorText || 'Unknown error'}`);
     }
     
     const data = await response.json();
-    console.log('Galadia API response data:', data);
+    console.log('Gladia API success response:', data);
     
-    // Handle different response formats
-    if (data.text) {
-      return data.text;
-    } else if (data.result?.transcription) {
+    // Handle the response format based on Gladia's API documentation
+    if (data.prediction) {
+      return data.prediction;
+    } else if (data.result && data.result.transcription) {
       return data.result.transcription;
     } else if (data.transcription) {
       return data.transcription;
     } else {
-      console.error('Unexpected Galadia API response format:', data);
-      throw new Error('Unexpected response format from Galadia API');
+      console.error('Unexpected Gladia API response format:', data);
+      throw new Error('Unexpected response format from Gladia API');
     }
   } catch (error) {
-    console.error('Error transcribing audio:', error);
+    console.error('Error in transcribeAudio function:', error);
     throw error;
   }
 };

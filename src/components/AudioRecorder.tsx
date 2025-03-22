@@ -51,7 +51,10 @@ const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setPermissionStatus('granted');
       
-      mediaRecorderRef.current = new MediaRecorder(stream);
+      // Use proper audio format for better transcription
+      mediaRecorderRef.current = new MediaRecorder(stream, {
+        mimeType: 'audio/webm'
+      });
       audioChunksRef.current = [];
       
       mediaRecorderRef.current.ondataavailable = (event) => {
@@ -59,7 +62,14 @@ const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
       };
       
       mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        // Create Blob with proper MIME type
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        console.log('Recording complete. Blob created:', { 
+          size: audioBlob.size, 
+          type: audioBlob.type,
+          chunks: audioChunksRef.current.length
+        });
+        
         const recording = { id: Date.now(), duration, blob: audioBlob };
         setRecordings(prev => [...prev, recording]);
         stream.getTracks().forEach(track => track.stop());
@@ -137,7 +147,12 @@ const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
       
       if (isTranscriptionEnabled) {
         try {
-          // Call the transcription API service with updated key
+          console.log("Sending blob for transcription:", {
+            size: recording.blob.size,
+            type: recording.blob.type
+          });
+          
+          // Call the transcription API service with updated parameters
           transcript = await transcribeAudio(recording.blob);
           
           toast({
@@ -146,6 +161,10 @@ const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
           });
           
           console.log("Transcription result:", transcript);
+          
+          if (!transcript || transcript.trim() === '') {
+            throw new Error("Empty transcript received");
+          }
         } catch (error) {
           console.error('Transcription error:', error);
           toast({
