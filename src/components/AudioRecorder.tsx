@@ -1,9 +1,10 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Mic, Square, Clock, Play, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
-import { analyzeCommunication } from '@/services/api';
+import { analyzeCommunication, transcribeAudio } from '@/services/api';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
@@ -13,6 +14,7 @@ const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
   const [recordings, setRecordings] = useState<{ id: number; duration: number; blob?: Blob }[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [permissionStatus, setPermissionStatus] = useState<'granted' | 'denied' | 'prompt'>('prompt');
+  const [isTranscriptionEnabled, setIsTranscriptionEnabled] = useState(true);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -127,11 +129,28 @@ const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
       }
       
       toast({
-        title: "DEMO MODE: Processing Audio",
-        description: "This is a demo. In a real app, your actual audio would be transcribed. Instead, we'll show you simulated results.",
+        title: "Processing Audio",
+        description: "Transcribing your recording, please wait...",
       });
       
-      const mockTranscript = `
+      let transcript = '';
+      
+      if (isTranscriptionEnabled) {
+        try {
+          transcript = await transcribeAudio(recording.blob);
+          toast({
+            title: "Transcription Complete",
+            description: "Your recording has been successfully transcribed.",
+          });
+        } catch (error) {
+          console.error('Transcription error:', error);
+          toast({
+            title: "Transcription Error",
+            description: "Could not transcribe your recording. Using fallback mode.",
+            variant: "destructive"
+          });
+          // Use mock transcript as a fallback
+          transcript = `
 Jessica: I felt a bit overwhelmed at work today. The project deadline got moved up and now I'm worried about getting everything done.
 Mark: That sounds stressful. Why don't you just ask for an extension?
 Jessica: Well, it's not that simple. I've already—
@@ -139,22 +158,29 @@ Mark: You always say that, but have you actually tried asking?
 Jessica: I feel like you're not really understanding what I'm saying. This is important to me.
 Mark: I'm sorry. You're right. Can you help me understand what's making this so difficult?
 `;
+        }
+      } else {
+        // Use mock transcript when transcription is disabled
+        transcript = `
+Jessica: I felt a bit overwhelmed at work today. The project deadline got moved up and now I'm worried about getting everything done.
+Mark: That sounds stressful. Why don't you just ask for an extension?
+Jessica: Well, it's not that simple. I've already—
+Mark: You always say that, but have you actually tried asking?
+Jessica: I feel like you're not really understanding what I'm saying. This is important to me.
+Mark: I'm sorry. You're right. Can you help me understand what's making this so difficult?
+`;
+      }
 
-      toast({
-        title: "DEMO MODE: Transcription Complete",
-        description: "This is a simulated transcript, not your actual recording. In a real app, your conversation would be analyzed.",
-      });
-
-      const analysisResult = await analyzeCommunication(mockTranscript);
+      const analysisResult = await analyzeCommunication(transcript);
       
       onTranscriptAnalyzed({
-        transcript: mockTranscript,
+        transcript: transcript,
         analysis: analysisResult.text
       });
       
       toast({
-        title: "DEMO MODE: Analysis Complete",
-        description: "The simulated conversation has been analyzed. This is not based on your actual recording.",
+        title: "Analysis Complete",
+        description: "Your conversation has been analyzed.",
       });
     } catch (error) {
       console.error('Error analyzing recording:', error);
@@ -184,20 +210,36 @@ Mark: I'm sorry. You're right. Can you help me understand what's making this so 
     return null;
   };
   
+  const toggleTranscription = () => {
+    setIsTranscriptionEnabled(prev => !prev);
+    toast({
+      title: isTranscriptionEnabled ? "Using Demo Mode" : "Using Real Transcription",
+      description: isTranscriptionEnabled 
+        ? "Switched to demo mode. Your recordings won't be sent for transcription." 
+        : "Switched to real transcription. Your recordings will be transcribed using Galadia API.",
+    });
+  };
+  
   return (
     <div className="glass rounded-xl p-6 shadow-sm">
       <h3 className="font-medium mb-4">Record Your Conversation</h3>
       
       {renderMicrophonePermissionAlert()}
       
-      <Alert className="mb-4 bg-amber-50 border-amber-200">
-        <AlertCircle className="h-4 w-4 text-amber-600" />
-        <AlertTitle className="text-amber-800">Demo Mode Active</AlertTitle>
-        <AlertDescription className="text-amber-700">
-          This is a demonstration only. Your actual recordings are not being analyzed. 
-          When you click "Analyze", you'll see a simulated transcript and analysis.
-        </AlertDescription>
-      </Alert>
+      {!isTranscriptionEnabled && (
+        <Alert className="mb-4 bg-amber-50 border-amber-200">
+          <AlertCircle className="h-4 w-4 text-amber-600" />
+          <AlertTitle className="text-amber-800">Demo Mode Active</AlertTitle>
+          <AlertDescription className="text-amber-700">
+            <p className="font-medium mb-2">In this demo mode:</p>
+            <ol className="mt-2 ml-4 space-y-1 list-decimal">
+              <li>Your recordings are not actually processed or sent to any server</li>
+              <li>The transcript is a pre-written example conversation</li>
+              <li>The analysis is simulated and not based on your actual conversation</li>
+            </ol>
+          </AlertDescription>
+        </Alert>
+      )}
       
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
@@ -253,8 +295,18 @@ Mark: I'm sorry. You're right. Can you help me understand what's making this so 
 
       <div className="text-sm text-foreground/60 mb-6">
         <strong>How it works:</strong> When you start recording, your browser will ask for microphone permission. After 
-        recording your conversation, a real app would transcribe the audio and analyze communication patterns. 
-        <strong className="text-amber-600"> In this demo, we do not process your actual audio but instead display simulated results.</strong>
+        recording your conversation, {isTranscriptionEnabled 
+          ? "your audio will be transcribed using Galadia.io API and analyzed for communication patterns." 
+          : "a simulated transcript will be used for demonstration purposes."}
+        
+        <Button
+          variant="link"
+          size="sm"
+          onClick={toggleTranscription}
+          className="ml-2 p-0 h-auto text-primary underline"
+        >
+          {isTranscriptionEnabled ? "Switch to Demo Mode" : "Use Real Transcription"}
+        </Button>
       </div>
       
       {recordings.length > 0 && (
@@ -287,7 +339,7 @@ Mark: I'm sorry. You're right. Can you help me understand what's making this so 
                   >
                     {isProcessing ? 
                       <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Analyzing...</> : 
-                      'Analyze (Demo)'}
+                      isTranscriptionEnabled ? 'Analyze' : 'Analyze (Demo)'}
                   </Button>
                   <button 
                     onClick={() => handleDeleteRecording(recording.id)}

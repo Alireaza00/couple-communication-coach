@@ -85,6 +85,34 @@ export const generateDateNightIdeas = async (): Promise<DateNightIdea[]> => {
   }
 };
 
+// Function to transcribe audio using Galadia API
+export const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
+  try {
+    const apiKey = '1c393455-fe4f-4b29-8612-73b109d29548';
+    const formData = new FormData();
+    formData.append('file', audioBlob, 'audio.wav');
+    
+    const response = await fetch('https://api.galadia.io/v1/transcribe', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: formData
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`Galadia API error: ${errorData.error || 'Unknown error'}`);
+    }
+    
+    const data = await response.json();
+    return data.text || '';
+  } catch (error) {
+    console.error('Error transcribing audio:', error);
+    throw error;
+  }
+};
+
 // Generic function to analyze communication using AI
 export const analyzeCommunication = async (transcript: string): Promise<AIResponse> => {
   return callOpenRouter([
