@@ -1,3 +1,4 @@
+
 import { DateNightIdea, OpenRouterMessage, AIResponse, ConversationStarter } from "@/types";
 
 // Placeholder function for fetching date nights
@@ -88,11 +89,13 @@ export const generateDateNightIdeas = async (): Promise<DateNightIdea[]> => {
 // Function to transcribe audio using Galadia API
 export const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
   try {
-    const apiKey = '1c393455-fe4f-4b29-8612-73b109d29548';
+    const apiKey = '93a3db91-f8d6-4bc9-9cac-92fbe76c50e1'; // Updated API key
     const formData = new FormData();
     formData.append('file', audioBlob, 'audio.wav');
     
-    const response = await fetch('https://api.galadia.io/v1/transcribe', {
+    console.log('Sending audio to Galadia API...');
+    
+    const response = await fetch('https://api.gladia.io/v2/transcription', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`
@@ -101,12 +104,25 @@ export const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
     });
     
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`Galadia API error: ${errorData.error || 'Unknown error'}`);
+      const errorText = await response.text();
+      console.error('Galadia API response:', response.status, errorText);
+      throw new Error(`Galadia API error: ${response.status} - ${errorText || 'Unknown error'}`);
     }
     
     const data = await response.json();
-    return data.text || '';
+    console.log('Galadia API response data:', data);
+    
+    // Handle different response formats
+    if (data.text) {
+      return data.text;
+    } else if (data.result?.transcription) {
+      return data.result.transcription;
+    } else if (data.transcription) {
+      return data.transcription;
+    } else {
+      console.error('Unexpected Galadia API response format:', data);
+      throw new Error('Unexpected response format from Galadia API');
+    }
   } catch (error) {
     console.error('Error transcribing audio:', error);
     throw error;

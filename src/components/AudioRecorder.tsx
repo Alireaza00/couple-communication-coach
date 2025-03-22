@@ -137,11 +137,15 @@ const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
       
       if (isTranscriptionEnabled) {
         try {
+          // Call the transcription API service with updated key
           transcript = await transcribeAudio(recording.blob);
+          
           toast({
             title: "Transcription Complete",
             description: "Your recording has been successfully transcribed.",
           });
+          
+          console.log("Transcription result:", transcript);
         } catch (error) {
           console.error('Transcription error:', error);
           toast({
