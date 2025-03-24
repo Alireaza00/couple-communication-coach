@@ -27,7 +27,7 @@ export const useAudioAnalyzer = ({ onTranscriptAnalyzed }: UseAudioAnalyzerProps
       title: isTranscriptionEnabled ? "Using Demo Mode" : "Using Real Transcription",
       description: isTranscriptionEnabled 
         ? "Switched to demo mode. Your recordings won't be sent for transcription." 
-        : "Switched to real transcription. Your recordings will be transcribed using Galadia API.",
+        : "Switched to real transcription. Your recordings will be transcribed using Gladia API.",
     });
   };
 
@@ -116,25 +116,50 @@ Mark: I'm sorry. You're right. Can you help me understand what's making this so 
 `;
       }
 
-      const analysisResult = await analyzeCommunication(transcript);
-      
-      onTranscriptAnalyzed({
-        transcript: transcript,
-        analysis: analysisResult.text
-      });
-      
-      toast({
-        title: "Analysis Complete",
-        description: "Your conversation has been analyzed.",
-      });
+      try {
+        const analysisResult = await analyzeCommunication(transcript);
+        
+        onTranscriptAnalyzed({
+          transcript: transcript,
+          analysis: analysisResult.text
+        });
+        
+        toast({
+          title: "Analysis Complete",
+          description: "Your conversation has been analyzed.",
+        });
+      } catch (error) {
+        console.error('Error analyzing recording:', error);
+        
+        // If OpenRouter API key is not found, use fallback analysis
+        if (error instanceof Error && error.message.includes("OpenRouter API key not found")) {
+          onTranscriptAnalyzed({
+            transcript: transcript,
+            analysis: "Your conversation shows some patterns of interruption, but also demonstrates good recovery with empathetic responses. Consider practicing active listening techniques to improve further."
+          });
+          
+          toast({
+            title: "Demo Analysis Complete",
+            description: "Using demo analysis because OpenRouter API key is not set.",
+          });
+        } else {
+          toast({
+            title: "Analysis Error",
+            description: "Could not analyze your recording. Please try again.",
+            variant: "destructive"
+          });
+        }
+      } finally {
+        setIsProcessing(false);
+        setCurrentlyProcessingId(null);
+      }
     } catch (error) {
-      console.error('Error analyzing recording:', error);
+      console.error('Error in analyzeRecording:', error);
       toast({
         title: "Analysis Error",
         description: "Could not analyze your recording. Please try again.",
         variant: "destructive"
       });
-    } finally {
       setIsProcessing(false);
       setCurrentlyProcessingId(null);
     }
