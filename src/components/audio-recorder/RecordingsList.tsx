@@ -1,6 +1,7 @@
 
 import { Play, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { formatTime } from './utils/formatTime';
 
 interface Recording {
   id: number;
@@ -16,7 +17,7 @@ interface RecordingsListProps {
   handlePlayRecording: (id: number) => void;
   handleDeleteRecording: (id: number) => void;
   analyzeRecording: (id: number) => void;
-  formatTime: (seconds: number) => string;
+  formatTime?: (seconds: number) => string;
 }
 
 export const RecordingsList = ({
@@ -27,8 +28,11 @@ export const RecordingsList = ({
   handlePlayRecording,
   handleDeleteRecording,
   analyzeRecording,
-  formatTime
+  formatTime: customFormatTime
 }: RecordingsListProps) => {
+  // Use the provided format function or the default one
+  const timeFormatter = customFormatTime || formatTime;
+  
   return (
     <div>
       <h4 className="text-sm font-medium text-foreground/70 mb-3">Recent Recordings</h4>
@@ -53,7 +57,7 @@ export const RecordingsList = ({
                 <span className="text-sm">Recording {new Date(recording.id).toLocaleTimeString()}</span>
               </div>
               <div className="flex items-center space-x-3">
-                <span className="text-xs text-gray-500">{formatTime(recording.duration)}</span>
+                <span className="text-xs text-gray-500">{timeFormatter(recording.duration)}</span>
                 <Button
                   onClick={() => analyzeRecording(recording.id)}
                   variant="outline"
