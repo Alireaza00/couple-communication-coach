@@ -1,3 +1,4 @@
+
 import { DateNightIdea, OpenRouterMessage, AIResponse, ConversationStarter } from "@/types";
 
 // Placeholder function for fetching date nights
@@ -120,13 +121,15 @@ export const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
     const data = await response.json();
     console.log('Gladia API success response:', data);
     
-    // Handle the new response format from Gladia API
+    // Handle the response format from Gladia API
     if (Array.isArray(data)) {
-      // New format: array of segments with transcription property
-      return data
+      // Handle array format (newest API)
+      const transcriptions = data
         .filter(segment => segment && typeof segment.transcription === 'string')
         .map(segment => segment.transcription)
         .join(' ');
+      
+      return transcriptions || JSON.stringify(data); // Return raw data if parsing fails
     } else if (data.prediction) {
       // Old format option 1
       return data.prediction;
@@ -137,8 +140,9 @@ export const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
       // Old format option 3
       return data.transcription;
     } else {
+      // If none of the expected formats match, return the raw JSON
       console.error('Unexpected Gladia API response format:', data);
-      throw new Error('Unexpected response format from Gladia API');
+      return JSON.stringify(data);
     }
   } catch (error) {
     console.error('Error in transcribeAudio function:', error);

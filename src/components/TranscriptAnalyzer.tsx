@@ -7,12 +7,21 @@ import {
   ChevronUp, 
   InfoIcon, 
   AlertCircle, 
-  CheckCircle 
+  CheckCircle,
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogClose
+} from "@/components/ui/dialog";
 
 interface TranscriptAnalyzerProps {
   transcript?: string;
@@ -29,9 +38,32 @@ interface Insight {
 
 const TranscriptAnalyzer = ({ transcript, analysisResult }: TranscriptAnalyzerProps) => {
   const [expandedInsight, setExpandedInsight] = useState<number | null>(null);
+  const [showFullTranscript, setShowFullTranscript] = useState(false);
   
   // Check if this is a demo transcript or real data
   const isDemoTranscript = !transcript || transcript.includes("Jessica: I felt a bit overwhelmed at work today");
+  
+  // Format the transcript for display
+  const formatTranscript = (text: string | undefined): string => {
+    if (!text) return "";
+    
+    // If the transcript is a JSON string, parse it and extract the transcriptions
+    if (text.startsWith('[') && text.includes('transcription')) {
+      try {
+        const jsonData = JSON.parse(text);
+        return jsonData
+          .filter((item: any) => item && item.transcription)
+          .map((item: any) => item.transcription)
+          .join(' ');
+      } catch (e) {
+        console.error('Error parsing JSON transcript:', e);
+      }
+    }
+    
+    return text;
+  };
+  
+  const formattedTranscript = formatTranscript(transcript);
   
   // Parse insights from the AI analysis
   const parseInsights = (text: string | undefined): Insight[] => {
@@ -76,6 +108,32 @@ const TranscriptAnalyzer = ({ transcript, analysisResult }: TranscriptAnalyzerPr
       </div>
     );
   }
+  
+  // Function to split transcript into speaker segments
+  const getSpeakerSegments = (text: string) => {
+    if (!text) return [];
+    
+    const segments: {speaker?: string, content: string}[] = [];
+    const lines = text.split('\n');
+    
+    lines.forEach(line => {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) return;
+      
+      const speakerMatch = trimmedLine.match(/^([^:]+):/);
+      if (speakerMatch) {
+        const speaker = speakerMatch[1].trim();
+        const content = trimmedLine.substring(speakerMatch[0].length).trim();
+        segments.push({ speaker, content });
+      } else {
+        segments.push({ content: trimmedLine });
+      }
+    });
+    
+    return segments;
+  };
+  
+  const transcriptSegments = getSpeakerSegments(formattedTranscript);
   
   return (
     <>
@@ -175,38 +233,24 @@ const TranscriptAnalyzer = ({ transcript, analysisResult }: TranscriptAnalyzerPr
               <h3 className="font-medium">Conversation Transcript {isDemoTranscript ? "(Demo)" : ""}</h3>
             </div>
             <div className="bg-gray-50 rounded-lg p-4 max-h-[300px] overflow-y-auto">
-              <div className="space-y-4">
-                {transcript ? (
-                  transcript.split('\n').map((line, idx) => {
-                    if (!line.trim()) return null;
-                    
-                    const speakerMatch = line.match(/^([^:]+):/);
-                    if (speakerMatch) {
-                      const speaker = speakerMatch[1];
-                      const content = line.substring(speakerMatch[0].length).trim();
-                      
-                      return (
-                        <div key={idx}>
-                          <div className="font-medium text-sm mb-1">{speaker}:</div>
-                          <p className="text-sm text-foreground/80">
-                            {content}
-                          </p>
-                        </div>
-                      );
-                    }
-                    
-                    return (
-                      <div key={idx}>
-                        <p className="text-sm text-foreground/80">{line}</p>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="text-center text-foreground/50">
-                    No transcript available
-                  </div>
-                )}
-              </div>
+              {transcriptSegments.length > 0 ? (
+                <div className="space-y-4">
+                  {transcriptSegments.map((segment, idx) => (
+                    <div key={idx}>
+                      {segment.speaker && (
+                        <div className="font-medium text-sm mb-1">{segment.speaker}:</div>
+                      )}
+                      <p className="text-sm text-foreground/80">
+                        {segment.content}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center text-foreground/50">
+                  No transcript available
+                </div>
+              )}
             </div>
             {isDemoTranscript && (
               <div className="mt-2 text-xs text-amber-600 font-medium">
@@ -214,7 +258,11 @@ const TranscriptAnalyzer = ({ transcript, analysisResult }: TranscriptAnalyzerPr
               </div>
             )}
             <div className="mt-4 flex justify-end">
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowFullTranscript(true)}
+              >
                 View Full Transcript
               </Button>
             </div>
@@ -274,6 +322,53 @@ const TranscriptAnalyzer = ({ transcript, analysisResult }: TranscriptAnalyzerPr
           </div>
         </div>
       </section>
+      
+      {/* Full Transcript Dialog */}
+      <Dialog open={showFullTranscript} onOpenChange={setShowFullTranscript}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <FileText className="h-5 w-5 mr-2" />
+              Full Conversation Transcript
+            </DialogTitle>
+            <DialogDescription>
+              {isDemoTranscript 
+                ? "This is a simulated transcript for demonstration purposes." 
+                : "This is the full transcript of your recorded conversation."}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="mt-4 bg-gray-50 rounded-lg p-6">
+            {transcriptSegments.length > 0 ? (
+              <div className="space-y-6">
+                {transcriptSegments.map((segment, idx) => (
+                  <div key={idx}>
+                    {segment.speaker && (
+                      <div className="font-medium mb-1">{segment.speaker}:</div>
+                    )}
+                    <p className="text-foreground/80">
+                      {segment.content}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-foreground/50 py-8">
+                No transcript available
+              </div>
+            )}
+          </div>
+          
+          <div className="mt-4 flex justify-end">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowFullTranscript(false)}
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

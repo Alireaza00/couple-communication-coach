@@ -14,6 +14,7 @@ const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
   const [duration, setDuration] = useState(0);
   const [recordings, setRecordings] = useState<{ id: number; duration: number; blob?: Blob }[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [currentlyProcessingId, setCurrentlyProcessingId] = useState<number | null>(null);
   const [permissionStatus, setPermissionStatus] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   const [isTranscriptionEnabled, setIsTranscriptionEnabled] = useState(true);
   
@@ -125,7 +126,18 @@ const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
   
   const analyzeRecording = async (id: number) => {
     try {
+      // Prevent multiple simultaneous analyses
+      if (isProcessing) {
+        toast({
+          title: "Processing in Progress",
+          description: "Please wait until the current analysis is complete.",
+        });
+        return;
+      }
+
       setIsProcessing(true);
+      setCurrentlyProcessingId(id);
+      
       const recording = recordings.find(rec => rec.id === id);
       if (!recording?.blob) {
         throw new Error("Recording not found");
@@ -153,6 +165,19 @@ const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
             : JSON.stringify(transcriptionResult);
           
           console.log("Transcription result:", transcript);
+          
+          // Format the transcript if it's in JSON format
+          if (transcript.startsWith('[') && transcript.includes('transcription')) {
+            try {
+              const jsonData = JSON.parse(transcript);
+              transcript = jsonData
+                .filter((item: any) => item && item.transcription)
+                .map((item: any) => item.transcription)
+                .join(' ');
+            } catch (e) {
+              console.error('Error parsing JSON transcript:', e);
+            }
+          }
           
           if (!transcript || (typeof transcript === 'string' && transcript.trim() === '')) {
             throw new Error("Empty transcript received");
@@ -205,6 +230,7 @@ Mark: I'm sorry. You're right. Can you help me understand what's making this so 
       });
     } finally {
       setIsProcessing(false);
+      setCurrentlyProcessingId(null);
     }
   };
   
@@ -252,6 +278,7 @@ Mark: I'm sorry. You're right. Can you help me understand what's making this so 
         <RecordingsList 
           recordings={recordings}
           isProcessing={isProcessing}
+          currentlyProcessingId={currentlyProcessingId}
           isTranscriptionEnabled={isTranscriptionEnabled}
           handlePlayRecording={handlePlayRecording}
           handleDeleteRecording={handleDeleteRecording}
