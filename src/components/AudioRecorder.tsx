@@ -141,6 +141,7 @@ const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
       });
       
       let transcript = '';
+      let shouldUseFallback = false;
       
       if (isTranscriptionEnabled) {
         try {
@@ -172,11 +173,12 @@ const AudioRecorder = ({ onTranscriptAnalyzed = (analysis: any) => {} }) => {
             description: "Could not transcribe your recording. Using fallback mode.",
             variant: "destructive"
           });
-          isTranscriptionEnabled = false;
+          shouldUseFallback = true;
+          setIsTranscriptionEnabled(false);
         }
       }
       
-      if (!isTranscriptionEnabled || transcript === '') {
+      if (!isTranscriptionEnabled || shouldUseFallback || transcript === '') {
         transcript = `
 Jessica: I felt a bit overwhelmed at work today. The project deadline got moved up and now I'm worried about getting everything done.
 Mark: That sounds stressful. Why don't you just ask for an extension?
