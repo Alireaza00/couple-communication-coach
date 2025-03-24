@@ -63,7 +63,7 @@ const DateCard = ({
   };
   
   return (
-    <div className={cn("glass rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300", className)}>
+    <div className={cn("bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300", className)}>
       <div className="relative">
         <img 
           src={imageUrl} 
@@ -86,17 +86,17 @@ const DateCard = ({
       </div>
       
       <div className="p-5">
-        <h3 className="font-medium text-lg mb-2">{title}</h3>
-        <p className="text-sm text-foreground/70 mb-4">{description}</p>
+        <h3 className="font-medium text-lg mb-2 text-gray-900 dark:text-gray-100">{title}</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">{description}</p>
         
         <div className="flex flex-wrap gap-2 mb-4">
-          <span className="inline-flex items-center text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+          <span className="inline-flex items-center text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full">
             <Clock className="h-3 w-3 mr-1" /> {duration}
           </span>
-          <span className="inline-flex items-center text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+          <span className="inline-flex items-center text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full">
             <MapPin className="h-3 w-3 mr-1" /> {locationMapping[location]}
           </span>
-          <span className="inline-flex items-center text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+          <span className="inline-flex items-center text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full">
             <DollarSign className="h-3 w-3 mr-1" /> 
             {costMapping[cost].label}
           </span>
