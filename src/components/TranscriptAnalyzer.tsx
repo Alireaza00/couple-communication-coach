@@ -21,7 +21,8 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogClose
+  DialogClose,
+  DialogTrigger
 } from "@/components/ui/dialog";
 
 interface TranscriptAnalyzerProps {
@@ -328,13 +329,59 @@ const TranscriptAnalyzer = ({ transcript, analysisResult }: TranscriptAnalyzerPr
               </div>
             )}
             <div className="mt-4 flex justify-end">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setShowFullTranscript(true)}
-              >
-                View Full Transcript
-              </Button>
+              <Dialog open={showFullTranscript} onOpenChange={setShowFullTranscript}>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                  >
+                    View Full Transcript
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center">
+                      <FileText className="h-5 w-5 mr-2" />
+                      Full Conversation Transcript
+                    </DialogTitle>
+                    <DialogDescription>
+                      {isDemoTranscript 
+                        ? "This is a simulated transcript for demonstration purposes." 
+                        : "This is the full transcript of your recorded conversation."}
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <div className="mt-4 bg-gray-50 rounded-lg p-6">
+                    {transcriptSegments.length > 0 ? (
+                      <div className="space-y-6">
+                        {transcriptSegments.map((segment, idx) => (
+                          <div key={idx}>
+                            {segment.speaker && (
+                              <div className="font-medium mb-1">{segment.speaker}:</div>
+                            )}
+                            <p className="text-foreground/80">
+                              {segment.content}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center text-foreground/50 py-8">
+                        No transcript available
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="mt-4 flex justify-end">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowFullTranscript(false)}
+                    >
+                      Close
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
           
@@ -393,56 +440,9 @@ const TranscriptAnalyzer = ({ transcript, analysisResult }: TranscriptAnalyzerPr
         </div>
       </section>
       
-      {/* Full Transcript Dialog */}
-      <Dialog open={showFullTranscript} onOpenChange={setShowFullTranscript}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center">
-              <FileText className="h-5 w-5 mr-2" />
-              Full Conversation Transcript
-            </DialogTitle>
-            <DialogDescription>
-              {isDemoTranscript 
-                ? "This is a simulated transcript for demonstration purposes." 
-                : "This is the full transcript of your recorded conversation."}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="mt-4 bg-gray-50 rounded-lg p-6">
-            {transcriptSegments.length > 0 ? (
-              <div className="space-y-6">
-                {transcriptSegments.map((segment, idx) => (
-                  <div key={idx}>
-                    {segment.speaker && (
-                      <div className="font-medium mb-1">{segment.speaker}:</div>
-                    )}
-                    <p className="text-foreground/80">
-                      {segment.content}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center text-foreground/50 py-8">
-                No transcript available
-              </div>
-            )}
-          </div>
-          
-          <div className="mt-4 flex justify-end">
-            <Button 
-              variant="outline" 
-              onClick={() => setShowFullTranscript(false)}
-            >
-              Close
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       {/* No Interruptions Exercise Dialog */}
       <Dialog open={showNoInterruptionsDialog} onOpenChange={setShowNoInterruptionsDialog}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-auto">
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center">
               <FileText className="h-5 w-5 mr-2" />
@@ -522,7 +522,7 @@ const TranscriptAnalyzer = ({ transcript, analysisResult }: TranscriptAnalyzerPr
 
       {/* Repair Attempts Dialog */}
       <Dialog open={showRepairAttemptsDialog} onOpenChange={setShowRepairAttemptsDialog}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-auto">
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center">
               <FileText className="h-5 w-5 mr-2" />
