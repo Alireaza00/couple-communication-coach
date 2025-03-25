@@ -5,6 +5,8 @@ import { format } from "date-fns";
 import { Heart, Calendar, Smile, Frown, Star, MessageCircleHeart } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { saveCheckIn } from "@/services/supabaseApi";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -19,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { CheckIn } from "@/types";
 
 const formSchema = z.object({
   mood: z.number().min(1).max(10),
@@ -35,6 +38,7 @@ const DailyCheckIn = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const today = format(new Date(), "EEEE, MMMM do");
+  const queryClient = useQueryClient();
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -50,25 +54,43 @@ const DailyCheckIn = () => {
 
   const needsSupport = form.watch("needsSupport");
 
+  const checkInMutation = useMutation({
+    mutationFn: (values: FormValues) => {
+      if (!user) {
+        throw new Error("User must be logged in to submit a check-in");
+      }
+      
+      const checkInData = {
+        user_id: user.uid,
+        date: new Date().toISOString(),
+        mood: values.mood,
+        highlight: values.highlight,
+        challenge: values.challenge,
+        gratitude: values.gratitude,
+        needs_support: values.needsSupport,
+        support_details: values.needsSupport ? values.supportDetails : null,
+      };
+      
+      return saveCheckIn(checkInData);
+    },
+    onSuccess: () => {
+      toast.success("Your daily check-in has been saved!");
+      queryClient.invalidateQueries({ queryKey: ['checkIns', user?.uid] });
+      navigate("/dashboard");
+    },
+    onError: (error) => {
+      console.error('Error saving check-in:', error);
+      toast.error("Failed to save your check-in. Please try again.");
+    }
+  });
+
   const onSubmit = (values: FormValues) => {
-    // Here we would normally save to the database
-    // For now, we'll just mock the save process
-    console.log("Check-in submitted:", values);
+    if (!user) {
+      toast.error("Please sign in to save your check-in");
+      return;
+    }
     
-    // Mock saving to localStorage for now
-    const checkIn = {
-      id: Date.now().toString(),
-      date: new Date().toISOString(),
-      ...values,
-      userId: user?.uid || "guest",
-    };
-    
-    const savedCheckIns = JSON.parse(localStorage.getItem("checkIns") || "[]");
-    savedCheckIns.push(checkIn);
-    localStorage.setItem("checkIns", JSON.stringify(savedCheckIns));
-    
-    toast.success("Your daily check-in has been saved!");
-    navigate("/dashboard");
+    checkInMutation.mutate(values);
   };
 
   return (

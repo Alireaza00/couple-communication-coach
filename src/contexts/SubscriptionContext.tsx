@@ -4,6 +4,7 @@ import { SubscriptionPlan, UserSubscription, SubscriptionStatus } from '@/types/
 import { useAuth } from './AuthContext';
 import { toast } from "sonner";
 import { subscriptionPlans } from '@/data/subscriptionPlans';
+import { getUserSubscription, updateSubscription } from '@/services/supabaseApi';
 
 interface SubscriptionContextType {
   currentPlan: SubscriptionPlan | null;
@@ -41,23 +42,59 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
 
       try {
         setIsLoading(true);
-        // Mock implementation - would connect to Supabase in real implementation
-        // Simulate free tier for now
-        const mockSubscription: UserSubscription = {
-          planId: 'free',
-          status: 'active',
-          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
-          cancelAtPeriodEnd: false
-        };
         
-        setUserSubscription(mockSubscription);
+        // Fetch subscription from Supabase
+        const subscription = await getUserSubscription(user.uid);
         
-        // Find the current plan based on the planId
-        const plan = subscriptionPlans.find(p => p.id === mockSubscription.planId) || null;
-        setCurrentPlan(plan);
+        if (subscription) {
+          const mappedSubscription: UserSubscription = {
+            planId: subscription.plan_id,
+            status: subscription.status as SubscriptionStatus,
+            currentPeriodEnd: subscription.current_period_end,
+            cancelAtPeriodEnd: subscription.cancel_at_period_end
+          };
+          
+          setUserSubscription(mappedSubscription);
+          
+          // Find the current plan based on the planId
+          const plan = subscriptionPlans.find(p => p.id === mappedSubscription.planId) || null;
+          setCurrentPlan(plan);
+        } else {
+          // Set to free plan if no subscription exists
+          const freeSubscription: UserSubscription = {
+            planId: 'free',
+            status: 'active',
+            currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
+            cancelAtPeriodEnd: false
+          };
+          
+          setUserSubscription(freeSubscription);
+          
+          // Find the free plan
+          const plan = subscriptionPlans.find(p => p.id === 'free') || null;
+          setCurrentPlan(plan);
+          
+          // Create the free subscription in the database
+          await updateSubscription(
+            user.uid,
+            'free',
+            'active',
+            freeSubscription.currentPeriodEnd as string,
+            false
+          );
+        }
       } catch (error) {
         console.error('Error fetching subscription:', error);
         toast.error('Failed to load subscription details');
+        
+        // Fallback to free plan
+        setUserSubscription({
+          planId: 'free',
+          status: 'active',
+          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          cancelAtPeriodEnd: false
+        });
+        setCurrentPlan(subscriptionPlans.find(p => p.id === 'free') || null);
       } finally {
         setIsLoading(false);
       }
@@ -66,7 +103,6 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
     fetchSubscription();
   }, [user]);
 
-  // Mock implementation of subscription management
   const upgradeSubscription = async (planId: string, interval: 'monthly' | 'annual') => {
     if (!user) {
       toast.error('Please sign in to upgrade your subscription');
@@ -75,17 +111,29 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       setIsLoading(true);
-      // This would connect to your payment processor in a real implementation
+      
+      // In a real implementation, this would connect to Stripe or another payment processor
       console.log(`Upgrading to plan ${planId} with ${interval} interval`);
       
-      // Mock success
+      // Calculate the end date based on the interval
+      const currentPeriodEnd = new Date(Date.now() + (interval === 'annual' ? 365 : 30) * 24 * 60 * 60 * 1000).toISOString();
+      
+      // Update subscription in Supabase
+      await updateSubscription(
+        user.uid,
+        planId,
+        'active',
+        currentPeriodEnd,
+        false
+      );
+      
+      // Update local state
       const plan = subscriptionPlans.find(p => p.id === planId) || null;
       
-      // Update state
       const updatedSubscription: UserSubscription = {
         planId: planId,
         status: 'active',
-        currentPeriodEnd: new Date(Date.now() + (interval === 'annual' ? 365 : 30) * 24 * 60 * 60 * 1000).toISOString(),
+        currentPeriodEnd: currentPeriodEnd,
         cancelAtPeriodEnd: false
       };
       
@@ -110,10 +158,16 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
     try {
       setIsLoading(true);
       
-      // Mock implementation
-      console.log('Cancelling subscription');
+      // Update subscription in Supabase
+      await updateSubscription(
+        user.uid,
+        userSubscription.planId,
+        userSubscription.status,
+        userSubscription.currentPeriodEnd as string,
+        true
+      );
       
-      // Update state to mark as cancelling at period end
+      // Update local state
       setUserSubscription({
         ...userSubscription,
         cancelAtPeriodEnd: true
@@ -137,10 +191,16 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
     try {
       setIsLoading(true);
       
-      // Mock implementation
-      console.log('Reactivating subscription');
+      // Update subscription in Supabase
+      await updateSubscription(
+        user.uid,
+        userSubscription.planId,
+        userSubscription.status,
+        userSubscription.currentPeriodEnd as string,
+        false
+      );
       
-      // Update state
+      // Update local state
       setUserSubscription({
         ...userSubscription,
         cancelAtPeriodEnd: false

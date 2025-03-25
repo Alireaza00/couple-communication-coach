@@ -8,24 +8,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { CheckIn } from "@/types";
+import { getCheckIns } from "@/services/supabaseApi";
+import { useQuery } from "@tanstack/react-query";
 
 const CheckInHistory = () => {
-  const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Load check-ins from localStorage
-  useEffect(() => {
-    if (user) {
-      const savedCheckIns = JSON.parse(localStorage.getItem("checkIns") || "[]") as CheckIn[];
-      const userCheckIns = savedCheckIns.filter(checkIn => checkIn.userId === user.uid);
-      
-      // Sort by date, newest first
-      userCheckIns.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      
-      setCheckIns(userCheckIns);
-    }
-  }, [user]);
+  const { data: checkIns = [], isLoading, error } = useQuery({
+    queryKey: ['checkIns', user?.uid],
+    queryFn: () => user ? getCheckIns(user.uid) : Promise.resolve([]),
+    enabled: !!user,
+  });
 
   const getMoodEmoji = (mood: number) => {
     if (mood >= 8) return "😄";
@@ -68,7 +62,15 @@ const CheckInHistory = () => {
       </CardHeader>
       
       <CardContent>
-        {checkIns.length === 0 ? (
+        {isLoading ? (
+          <div className="flex justify-center py-8">
+            <p>Loading check-ins...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-8 text-red-500">
+            <p>Error loading check-ins. Please try again.</p>
+          </div>
+        ) : checkIns.length === 0 ? (
           <div className="text-center py-8">
             <MessageCircleHeart className="h-12 w-12 mx-auto text-gray-300 mb-4" />
             <h3 className="text-lg font-medium text-gray-700 mb-2">No check-ins yet</h3>
@@ -124,13 +126,13 @@ const CheckInHistory = () => {
                     <p className="text-sm pl-5">{checkIn.gratitude}</p>
                   </div>
                   
-                  {checkIn.needsSupport && (
+                  {checkIn.needs_support && (
                     <div>
                       <h4 className="text-sm font-medium flex items-center gap-1">
                         <MessageCircleHeart className="h-3.5 w-3.5 text-red-500" />
                         Support Needed
                       </h4>
-                      <p className="text-sm pl-5">{checkIn.supportDetails}</p>
+                      <p className="text-sm pl-5">{checkIn.support_details}</p>
                     </div>
                   )}
                 </div>

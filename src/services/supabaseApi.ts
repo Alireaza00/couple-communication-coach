@@ -1,0 +1,621 @@
+import { supabase } from '@/lib/supabase';
+import { DateNightIdea, OpenRouterMessage, AIResponse, ConversationStarter } from "@/types";
+import { CheckIn } from "@/types";
+import { v4 as uuidv4 } from 'uuid';
+
+// User functions
+export const getCurrentUser = async () => {
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error) {
+    console.error('Error getting user:', error);
+    throw error;
+  }
+  return user;
+};
+
+// Check-in functions
+export const getCheckIns = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('check_ins')
+    .select('*')
+    .eq('user_id', userId)
+    .order('date', { ascending: false });
+  
+  if (error) {
+    console.error('Error fetching check-ins:', error);
+    throw error;
+  }
+  
+  return data as CheckIn[];
+};
+
+export const saveCheckIn = async (checkIn: Omit<CheckIn, 'id'>) => {
+  const { data, error } = await supabase
+    .from('check_ins')
+    .insert({
+      ...checkIn,
+      id: uuidv4(),
+      created_at: new Date().toISOString()
+    })
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error saving check-in:', error);
+    throw error;
+  }
+  
+  return data as CheckIn;
+};
+
+// Conversation starters functions
+export const getConversationStarters = async (): Promise<ConversationStarter[]> => {
+  const { data, error } = await supabase
+    .from('conversation_starters')
+    .select('*');
+  
+  if (error) {
+    console.error('Error fetching conversation starters:', error);
+    // Fall back to static data if database fetch fails
+    return getStaticConversationStarters();
+  }
+  
+  if (data.length === 0) {
+    // If no data in database, use static data and seed the database
+    const staticData = getStaticConversationStarters();
+    await seedConversationStarters(staticData);
+    return staticData;
+  }
+  
+  return data as ConversationStarter[];
+};
+
+// Function to get static conversation starters data
+const getStaticConversationStarters = (): ConversationStarter[] => {
+  return [
+    {
+      id: "1",
+      question: "What's one small thing I do that makes you happy?",
+      category: "relationship",
+      difficulty: "easy"
+    },
+    {
+      id: "2",
+      question: "If we could travel anywhere tomorrow, where would you want to go and why?",
+      category: "fun",
+      difficulty: "easy"
+    },
+    {
+      id: "3",
+      question: "What's something you're afraid to tell me?",
+      category: "deep",
+      difficulty: "deep"
+    },
+    {
+      id: "4",
+      question: "What's your favorite memory of us together?",
+      category: "relationship",
+      difficulty: "easy"
+    },
+    {
+      id: "5",
+      question: "If you could change one decision from your past, what would it be?",
+      category: "past",
+      difficulty: "medium"
+    },
+    {
+      id: "6",
+      question: "What's something you want to accomplish in the next five years?",
+      category: "future",
+      difficulty: "medium"
+    },
+    {
+      id: "7",
+      question: "What makes you feel most loved in our relationship?",
+      category: "relationship",
+      difficulty: "medium"
+    },
+    {
+      id: "8",
+      question: "What's one way we could improve our communication?",
+      category: "relationship",
+      difficulty: "medium"
+    },
+    {
+      id: "9",
+      question: "What hobby or activity have you always wanted to try together?",
+      category: "fun",
+      difficulty: "easy"
+    },
+    {
+      id: "10",
+      question: "What's the most meaningful gift you've ever received?",
+      category: "past",
+      difficulty: "medium"
+    },
+    {
+      id: "11",
+      question: "How do you envision our relationship in 10 years?",
+      category: "future",
+      difficulty: "deep"
+    },
+    {
+      id: "12",
+      question: "What's something about yourself that you're working on improving?",
+      category: "deep",
+      difficulty: "medium"
+    },
+    {
+      id: "13",
+      question: "What's a boundary you need that you haven't clearly expressed?",
+      category: "relationship",
+      difficulty: "deep"
+    },
+    {
+      id: "14",
+      question: "What's your favorite way to spend a weekend together?",
+      category: "fun",
+      difficulty: "easy"
+    },
+    {
+      id: "15",
+      question: "What's one thing your parents did that you want to do differently in our relationship?",
+      category: "past",
+      difficulty: "deep"
+    },
+    {
+      id: "16",
+      question: "If you could have dinner with anyone, living or dead, who would it be and why?",
+      category: "fun",
+      difficulty: "medium"
+    },
+    {
+      id: "17",
+      question: "What's something I do that annoys you but you've never mentioned?",
+      category: "relationship",
+      difficulty: "deep"
+    },
+    {
+      id: "18",
+      question: "What three words would you use to describe our relationship?",
+      category: "relationship",
+      difficulty: "medium"
+    },
+    {
+      id: "19",
+      question: "What's your love language and how can I better speak it?",
+      category: "relationship",
+      difficulty: "medium"
+    },
+    {
+      id: "20",
+      question: "What's a dream you've given up on that you wish you hadn't?",
+      category: "deep",
+      difficulty: "deep"
+    }
+  ];
+};
+
+// Seed conversation starters to database
+const seedConversationStarters = async (starters: ConversationStarter[]) => {
+  const { error } = await supabase
+    .from('conversation_starters')
+    .insert(starters);
+  
+  if (error) {
+    console.error('Error seeding conversation starters:', error);
+  }
+};
+
+// Subscription functions
+export const getUserSubscription = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+  
+  if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned" error
+    console.error('Error fetching subscription:', error);
+    throw error;
+  }
+  
+  return data || null;
+};
+
+export const updateSubscription = async (userId: string, planId: string, status: string, currentPeriodEnd: string, cancelAtPeriodEnd = false) => {
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .upsert({
+      user_id: userId,
+      plan_id: planId,
+      status: status,
+      current_period_end: currentPeriodEnd,
+      cancel_at_period_end: cancelAtPeriodEnd,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error updating subscription:', error);
+    throw error;
+  }
+  
+  return data;
+};
+
+// Recordings and transcripts functions
+export const saveRecording = async (userId: string, title: string, duration: number) => {
+  const { data, error } = await supabase
+    .from('recordings')
+    .insert({
+      user_id: userId,
+      title,
+      duration,
+      created_at: new Date().toISOString()
+    })
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error saving recording:', error);
+    throw error;
+  }
+  
+  return data;
+};
+
+export const getRecordings = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('recordings')
+    .select(`
+      *,
+      transcripts (*)
+    `)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  
+  if (error) {
+    console.error('Error fetching recordings:', error);
+    throw error;
+  }
+  
+  return data;
+};
+
+export const saveTranscript = async (recordingId: string, text: string) => {
+  const { data, error } = await supabase
+    .from('transcripts')
+    .insert({
+      recording_id: recordingId,
+      text,
+      created_at: new Date().toISOString()
+    })
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error saving transcript:', error);
+    throw error;
+  }
+  
+  // Update the recording with the transcript ID
+  await supabase
+    .from('recordings')
+    .update({ transcript_id: data.id })
+    .eq('id', recordingId);
+  
+  return data;
+};
+
+export const saveAnalysis = async (transcriptId: string, analysis: string) => {
+  const { data, error } = await supabase
+    .from('transcripts')
+    .update({ analysis })
+    .eq('id', transcriptId)
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error saving analysis:', error);
+    throw error;
+  }
+  
+  return data;
+};
+
+// Placeholder function for fetching date nights
+export const getDateNights = async (userId?: string, date?: Date) => {
+  // Mock implementation until we connect to a real backend
+  console.log("Fetching date nights for user:", userId, "on date:", date);
+  return [];
+};
+
+// Placeholder function for saving date night
+export const saveDateNight = async (dateNight: any) => {
+  // Mock implementation until we connect to a real backend
+  console.log("Saving date night:", dateNight);
+  return null;
+};
+
+// Placeholder function for deleting date night
+export const deleteDateNight = async (params: any) => {
+  // Mock implementation until we connect to a real backend
+  console.log("Deleting date night:", params);
+  return null;
+};
+
+// Generate date night ideas using AI
+export const generateDateNightIdeas = async (): Promise<DateNightIdea[]> => {
+  try {
+    const response = await callOpenRouter([
+      { role: "system", content: "You are a helpful relationship assistant that generates creative date night ideas for couples." },
+      { role: "user", content: "Generate 3 unique and interesting date night ideas. For each, provide a title and description." }
+    ]);
+
+    // Parse the AI response to extract date night ideas
+    const text = response.text;
+    const ideas: DateNightIdea[] = [];
+    
+    // Simple parser for the expected format
+    const ideaRegex = /(\d+\.\s*)?([^\n]+)\n([^]*?)(?=\n\d+|$)/g;
+    let match;
+    let counter = 0;
+    
+    while ((match = ideaRegex.exec(text)) !== null && counter < 10) {
+      const title = match[2].trim();
+      const description = match[3].trim();
+      
+      if (title && description) {
+        ideas.push({
+          id: String(Date.now() + counter),
+          title,
+          description
+        });
+        counter++;
+      }
+    }
+    
+    // If parsing failed, create a fallback idea
+    if (ideas.length === 0) {
+      ideas.push({
+        id: String(Date.now()),
+        title: "Romantic Dinner at Home",
+        description: "Cook a special meal together at home. Set the mood with candles and music."
+      });
+    }
+    
+    return ideas;
+  } catch (error) {
+    console.error("Error generating date night ideas:", error);
+    // Return fallback ideas if API call fails
+    return [
+      {
+        id: String(Date.now()),
+        title: "Picnic in the Park",
+        description: "Pack a basket with your favorite foods and drinks. Find a quiet spot in a local park and enjoy each other's company."
+      },
+      {
+        id: String(Date.now() + 1),
+        title: "Movie Marathon Night",
+        description: "Pick a theme or series and watch multiple movies back-to-back. Prepare snacks and cozy blankets."
+      },
+      {
+        id: String(Date.now() + 2),
+        title: "Stargazing Adventure",
+        description: "Drive to a spot away from city lights. Bring blankets and hot chocolate, lie back and enjoy the night sky together."
+      }
+    ];
+  }
+};
+
+// Function to transcribe audio using Gladia API
+export const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
+  try {
+    const apiKey = '93a3db91-f8d6-4bc9-9cac-92fbe76c50e1'; // Updated API key
+    const formData = new FormData();
+    
+    // Ensure we're sending the blob with the correct filename and MIME type
+    formData.append('audio', audioBlob, 'recording.wav');
+    
+    console.log('Preparing to send audio to Gladia API...', {
+      blobSize: audioBlob.size,
+      blobType: audioBlob.type
+    });
+    
+    // Use the correct endpoint and API version
+    const response = await fetch('https://api.gladia.io/audio/text/audio-transcription', {
+      method: 'POST',
+      headers: {
+        'x-gladia-key': apiKey,
+        // Don't set Content-Type header as it will be set automatically with the correct boundary for multipart/form-data
+      },
+      body: formData
+    });
+    
+    console.log('Gladia API response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Gladia API error response:', response.status, errorText);
+      throw new Error(`Gladia API error: ${response.status} - ${errorText || 'Unknown error'}`);
+    }
+    
+    const data = await response.json();
+    console.log('Gladia API success response:', data);
+    
+    // Handle the response format from Gladia API
+    if (Array.isArray(data)) {
+      // Handle array format (newest API)
+      const transcriptions = data
+        .filter(segment => segment && typeof segment.transcription === 'string')
+        .map(segment => segment.transcription)
+        .join(' ');
+      
+      return transcriptions || JSON.stringify(data); // Return raw data if parsing fails
+    } else if (data.prediction) {
+      // Old format option 1
+      return data.prediction;
+    } else if (data.result && data.result.transcription) {
+      // Old format option 2
+      return data.result.transcription;
+    } else if (data.transcription) {
+      // Old format option 3
+      return data.transcription;
+    } else {
+      // If none of the expected formats match, return the raw JSON
+      console.error('Unexpected Gladia API response format:', data);
+      return JSON.stringify(data);
+    }
+  } catch (error) {
+    console.error('Error in transcribeAudio function:', error);
+    throw error;
+  }
+};
+
+// Generic function to analyze communication using AI
+export const analyzeCommunication = async (transcript: string): Promise<AIResponse> => {
+  return callOpenRouter([
+    { role: "system", content: "You are a relationship communication expert. Analyze the provided conversation transcript between partners and provide insights on their communication patterns, strengths, and areas for improvement." },
+    { role: "user", content: `Please analyze this conversation between partners:\n\n${transcript}` }
+  ]);
+};
+
+// Generate personalized relationship exercises using AI
+export const generateExercises = async (issues: string[]): Promise<AIResponse> => {
+  const issuesText = issues.join(", ");
+  return callOpenRouter([
+    { role: "system", content: "You are a relationship therapist specialized in creating exercises to improve communication and connection between partners." },
+    { role: "user", content: `Generate 3 personalized exercises to help a couple work on these issues: ${issuesText}` }
+  ]);
+};
+
+// Core function to call OpenRouter API
+export const callOpenRouter = async (messages: OpenRouterMessage[]): Promise<AIResponse> => {
+  try {
+    // Get the API key from local storage
+    const apiKey = localStorage.getItem('openrouter_api_key');
+    
+    if (!apiKey) {
+      throw new Error("OpenRouter API key not found. Please add it in the AI Settings.");
+    }
+    
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer': window.location.origin,
+        'X-Title': 'Relationship Communication Coach'
+      },
+      body: JSON.stringify({
+        model: 'openai/gpt-3.5-turbo',  // Default model, can be changed
+        messages: messages,
+        temperature: 0.7,
+        max_tokens: 1000
+      })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`OpenRouter API error: ${errorData.error?.message || 'Unknown error'}`);
+    }
+    
+    const data = await response.json();
+    
+    return {
+      text: data.choices[0].message.content,
+      model: data.model
+    };
+  } catch (error) {
+    console.error("Error calling OpenRouter:", error);
+    return {
+      text: "I'm sorry, I couldn't process your request. Please check your API key and try again.",
+      model: "error"
+    };
+  }
+};
+
+// Function to generate AI-powered conversation starters
+export const generateConversationStarters = async (category?: string): Promise<ConversationStarter[]> => {
+  try {
+    const categoryPrompt = category ? `focused on the topic of ${category}` : "on various topics";
+    
+    const response = await callOpenRouter([
+      { 
+        role: "system", 
+        content: "You are a relationship coach specializing in creating conversation starters that help couples connect more deeply." 
+      },
+      { 
+        role: "user", 
+        content: `Generate 5 thoughtful conversation starter questions ${categoryPrompt}. Make them unique and engaging.` 
+      }
+    ]);
+
+    // Parse the AI response to extract conversation starters
+    const text = response.text;
+    const starters: ConversationStarter[] = [];
+    
+    // Simple parser for the expected format
+    const starterRegex = /(\d+\.\s*)?([^\n]+)/g;
+    let match;
+    let counter = 0;
+    
+    while ((match = starterRegex.exec(text)) !== null && counter < 10) {
+      const question = match[2].trim().replace(/^["']|["']$/g, '');
+      
+      if (question) {
+        // Assign a random category and difficulty for AI-generated starters
+        const categories: ConversationStarter['category'][] = ['fun', 'deep', 'relationship', 'future', 'past'];
+        const difficulties: ConversationStarter['difficulty'][] = ['easy', 'medium', 'deep'];
+        
+        starters.push({
+          id: `ai-${Date.now()}-${counter}`,
+          question,
+          category: category as ConversationStarter['category'] || categories[Math.floor(Math.random() * categories.length)],
+          difficulty: difficulties[Math.floor(Math.random() * difficulties.length)]
+        });
+        counter++;
+      }
+    }
+    
+    // If parsing failed, create a fallback starter
+    if (starters.length === 0) {
+      starters.push({
+        id: `ai-${Date.now()}`,
+        question: "What is something new you'd like us to experience together?",
+        category: 'relationship',
+        difficulty: 'medium'
+      });
+    }
+    
+    return starters;
+  } catch (error) {
+    console.error("Error generating conversation starters:", error);
+    // Return fallback starters if API call fails
+    return [
+      {
+        id: `ai-${Date.now()}-1`,
+        question: "What has been your favorite memory with me so far?",
+        category: 'relationship',
+        difficulty: 'easy'
+      },
+      {
+        id: `ai-${Date.now()}-2`,
+        question: "What's something you've always wanted to ask me but haven't?",
+        category: 'deep',
+        difficulty: 'medium'
+      },
+      {
+        id: `ai-${Date.now()}-3`,
+        question: "How would you describe our relationship to someone who doesn't know us?",
+        category: 'relationship',
+        difficulty: 'medium'
+      }
+    ];
+  }
+};
