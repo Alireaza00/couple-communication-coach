@@ -1,272 +1,218 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
-import AISettings from "./AISettings";
+import { cn } from "@/lib/utils";
 
 const Navbar = () => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const location = useLocation();
+  const [isOpen, setIsOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const { user, logout } = useAuth();
+  const location = useLocation();
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
+  const toggleMenu = () => setIsOpen(!isOpen);
+  const closeMenu = () => setIsOpen(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 10) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const isActive = (path: string) => {
+    if (path === "/" && location.pathname === "/") return true;
+    if (path !== "/" && location.pathname.startsWith(path)) return true;
+    return false;
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border">
-      <div className="container mx-auto px-6 py-4">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center">
-            <Link to="/" className="text-2xl font-bold">
-              TalkBetter
-            </Link>
-          </div>
+    <header
+      className={cn(
+        "fixed top-0 left-0 w-full z-50 transition-all duration-300",
+        isScrolled
+          ? "bg-background/80 backdrop-blur-sm border-b border-border shadow-sm py-2"
+          : "bg-transparent py-4"
+      )}
+    >
+      <div className="container flex justify-between items-center">
+        <Link to="/" className="flex items-center">
+          <span className="text-xl font-bold gradient-text">RelateWise</span>
+        </Link>
 
-          {/* Desktop navigation */}
-          <div className="hidden md:flex items-center space-x-1">
-            <Link
-              to="/how-it-works"
-              className={`px-3 py-2 rounded-md text-sm font-medium ${
-                location.pathname === "/how-it-works"
-                  ? "text-primary"
-                  : "text-foreground/70 hover:text-primary"
-              }`}
-            >
-              How It Works
-            </Link>
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center space-x-1">
+          <Link
+            to="/how-it-works"
+            className={cn(
+              "px-3 py-2 text-sm rounded-md transition-colors",
+              isActive("/how-it-works")
+                ? "text-primary font-medium"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent"
+            )}
+          >
+            How It Works
+          </Link>
+          <Link
+            to="/pricing"
+            className={cn(
+              "px-3 py-2 text-sm rounded-md transition-colors",
+              isActive("/pricing")
+                ? "text-primary font-medium"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent"
+            )}
+          >
+            Pricing
+          </Link>
+          <div className="pl-2">
             {user ? (
-              <>
-                <Link
-                  to="/dashboard"
-                  className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    location.pathname === "/dashboard"
-                      ? "text-primary"
-                      : "text-foreground/70 hover:text-primary"
-                  }`}
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  to="/analysis"
-                  className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    location.pathname === "/analysis"
-                      ? "text-primary"
-                      : "text-foreground/70 hover:text-primary"
-                  }`}
-                >
-                  Analysis
-                </Link>
-                <Link
-                  to="/interventions"
-                  className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    location.pathname === "/interventions"
-                      ? "text-primary"
-                      : "text-foreground/70 hover:text-primary"
-                  }`}
-                >
-                  Interventions
-                </Link>
-                <Link
-                  to="/date-night"
-                  className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    location.pathname === "/date-night"
-                      ? "text-primary"
-                      : "text-foreground/70 hover:text-primary"
-                  }`}
-                >
-                  Date Night
-                </Link>
-                <Link
-                  to="/progress"
-                  className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    location.pathname === "/progress"
-                      ? "text-primary"
-                      : "text-foreground/70 hover:text-primary"
-                  }`}
-                >
-                  Progress
-                </Link>
-                <Link
-                  to="/daily-check-in"
-                  className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    location.pathname === "/daily-check-in"
-                      ? "text-primary"
-                      : "text-foreground/70 hover:text-primary"
-                  }`}
-                >
-                  Daily Check-in
-                </Link>
-                <div className="ml-2">
-                  <AISettings />
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="ml-4 px-3 py-2 rounded-md text-sm font-medium text-foreground/70 hover:text-primary"
-                >
-                  Logout
-                </button>
-              </>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="flex items-center">
+                    <span className="mr-1">Account</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link to="/dashboard" className="w-full cursor-pointer">Dashboard</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/account" className="w-full cursor-pointer">Account Settings</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={logout} className="cursor-pointer">
+                    Log Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
-              <>
-                <Link
-                  to="/auth?mode=login"
-                  className="ml-4 px-3 py-2 rounded-md text-sm font-medium text-foreground/70 hover:text-primary"
-                >
-                  Log in
+              <div className="flex items-center space-x-2">
+                <Link to="/auth?mode=login">
+                  <Button variant="ghost">Log In</Button>
                 </Link>
-                <Link
-                  to="/auth?mode=signup"
-                  className="ml-2 btn-primary"
-                >
-                  Sign up
+                <Link to="/auth?mode=signup">
+                  <Button>Sign Up</Button>
                 </Link>
-                <div className="ml-2">
-                  <AISettings />
-                </div>
-              </>
+              </div>
             )}
           </div>
+        </nav>
 
-          {/* Mobile menu button */}
-          <div className="flex md:hidden items-center space-x-2">
-            <AISettings />
-            <button
-              type="button"
-              className="inline-flex items-center justify-center p-2 rounded-md text-foreground/70 hover:bg-primary/10 hover:text-primary focus:outline-none"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            >
-              <span className="sr-only">Open main menu</span>
-              {isMobileMenuOpen ? (
-                <X className="block h-6 w-6" aria-hidden="true" />
-              ) : (
-                <Menu className="block h-6 w-6" aria-hidden="true" />
-              )}
-            </button>
-          </div>
-        </div>
+        {/* Mobile Navigation Toggle */}
+        <button
+          className="md:hidden focus:outline-none"
+          onClick={toggleMenu}
+          aria-label="Toggle menu"
+        >
+          {isOpen ? (
+            <X className="h-6 w-6" />
+          ) : (
+            <Menu className="h-6 w-6" />
+          )}
+        </button>
       </div>
 
-      {/* Mobile menu */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden glass animate-fade-in-down">
-          <div className="px-2 pt-2 pb-3 space-y-1">
-            <Link
-              to="/how-it-works"
-              className={`block px-3 py-2 rounded-md text-base font-medium ${
-                location.pathname === "/how-it-works"
-                  ? "text-primary"
-                  : "text-foreground/70 hover:text-primary"
-              }`}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              How It Works
-            </Link>
-            {user ? (
-              <>
-                <Link
-                  to="/dashboard"
-                  className={`block px-3 py-2 rounded-md text-base font-medium ${
-                    location.pathname === "/dashboard"
-                      ? "text-primary"
-                      : "text-foreground/70 hover:text-primary"
-                  }`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  to="/analysis"
-                  className={`block px-3 py-2 rounded-md text-base font-medium ${
-                    location.pathname === "/analysis"
-                      ? "text-primary"
-                      : "text-foreground/70 hover:text-primary"
-                  }`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Analysis
-                </Link>
-                <Link
-                  to="/interventions"
-                  className={`block px-3 py-2 rounded-md text-base font-medium ${
-                    location.pathname === "/interventions"
-                      ? "text-primary"
-                      : "text-foreground/70 hover:text-primary"
-                  }`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Interventions
-                </Link>
-                <Link
-                  to="/date-night"
-                  className={`block px-3 py-2 rounded-md text-base font-medium ${
-                    location.pathname === "/date-night"
-                      ? "text-primary"
-                      : "text-foreground/70 hover:text-primary"
-                  }`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Date Night
-                </Link>
-                <Link
-                  to="/progress"
-                  className={`block px-3 py-2 rounded-md text-base font-medium ${
-                    location.pathname === "/progress"
-                      ? "text-primary"
-                      : "text-foreground/70 hover:text-primary"
-                  }`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Progress
-                </Link>
-                <Link
-                  to="/daily-check-in"
-                  className={`block px-3 py-2 rounded-md text-base font-medium ${
-                    location.pathname === "/daily-check-in"
-                      ? "text-primary"
-                      : "text-foreground/70 hover:text-primary"
-                  }`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Daily Check-in
-                </Link>
-                <button
-                  onClick={() => {
-                    handleLogout();
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-foreground/70 hover:text-primary"
-                >
-                  Logout
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/auth?mode=login"
-                  className="block px-3 py-2 rounded-md text-base font-medium text-foreground/70 hover:text-primary"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Log in
-                </Link>
-                <Link
-                  to="/auth?mode=signup"
-                  className="block px-3 py-2 rounded-md text-base font-medium text-primary bg-primary/10 hover:bg-primary/20"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Sign up
-                </Link>
-              </>
+      {/* Mobile Navigation Menu */}
+      <div
+        className={cn(
+          "fixed inset-0 top-[57px] bg-background z-40 md:hidden transition-transform duration-300 ease-in-out",
+          isOpen ? "translate-x-0" : "translate-x-full"
+        )}
+      >
+        <div className="container py-8 flex flex-col space-y-4">
+          <Link
+            to="/how-it-works"
+            className={cn(
+              "px-4 py-3 rounded-md transition-colors",
+              isActive("/how-it-works")
+                ? "bg-accent text-primary font-medium"
+                : "text-foreground hover:bg-accent"
             )}
-          </div>
+            onClick={closeMenu}
+          >
+            How It Works
+          </Link>
+          <Link
+            to="/pricing"
+            className={cn(
+              "px-4 py-3 rounded-md transition-colors",
+              isActive("/pricing")
+                ? "bg-accent text-primary font-medium"
+                : "text-foreground hover:bg-accent"
+            )}
+            onClick={closeMenu}
+          >
+            Pricing
+          </Link>
+          {user ? (
+            <>
+              <div className="h-px bg-border my-2"></div>
+              <Link
+                to="/dashboard"
+                className={cn(
+                  "px-4 py-3 rounded-md transition-colors",
+                  isActive("/dashboard")
+                    ? "bg-accent text-primary font-medium"
+                    : "text-foreground hover:bg-accent"
+                )}
+                onClick={closeMenu}
+              >
+                Dashboard
+              </Link>
+              <Link
+                to="/account"
+                className={cn(
+                  "px-4 py-3 rounded-md transition-colors",
+                  isActive("/account")
+                    ? "bg-accent text-primary font-medium"
+                    : "text-foreground hover:bg-accent"
+                )}
+                onClick={closeMenu}
+              >
+                Account Settings
+              </Link>
+              <button
+                className="px-4 py-3 text-left rounded-md text-foreground hover:bg-accent transition-colors"
+                onClick={() => {
+                  closeMenu();
+                  logout();
+                }}
+              >
+                Log Out
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="h-px bg-border my-2"></div>
+              <Link
+                to="/auth?mode=login"
+                className="px-4 py-3 rounded-md text-foreground hover:bg-accent transition-colors"
+                onClick={closeMenu}
+              >
+                Log In
+              </Link>
+              <Link
+                to="/auth?mode=signup"
+                className="px-4 py-3 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                onClick={closeMenu}
+              >
+                Sign Up
+              </Link>
+            </>
+          )}
         </div>
-      )}
-    </nav>
+      </div>
+    </header>
   );
 };
 
