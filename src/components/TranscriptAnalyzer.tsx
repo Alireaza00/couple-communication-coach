@@ -44,6 +44,30 @@ interface CommunicationMetrics {
   emotions: { name: string; percentage: string; color: string }[];
 }
 
+// Function to split transcript into speaker segments
+const getSpeakerSegments = (text: string) => {
+  if (!text) return [];
+  
+  const segments: {speaker?: string, content: string}[] = [];
+  const lines = text.split('\n');
+  
+  lines.forEach(line => {
+    const trimmedLine = line.trim();
+    if (!trimmedLine) return;
+    
+    const speakerMatch = trimmedLine.match(/^([^:]+):/);
+    if (speakerMatch) {
+      const speaker = speakerMatch[1].trim();
+      const content = trimmedLine.substring(speakerMatch[0].length).trim();
+      segments.push({ speaker, content });
+    } else {
+      segments.push({ content: trimmedLine });
+    }
+  });
+  
+  return segments;
+};
+
 const TranscriptAnalyzer = ({ transcript, analysisResult }: TranscriptAnalyzerProps) => {
   const [expandedInsight, setExpandedInsight] = useState<number | null>(null);
   const [showFullTranscript, setShowFullTranscript] = useState(false);
@@ -179,30 +203,6 @@ const TranscriptAnalyzer = ({ transcript, analysisResult }: TranscriptAnalyzerPr
       </div>
     );
   }
-  
-  // Function to split transcript into speaker segments
-  const getSpeakerSegments = (text: string) => {
-    if (!text) return [];
-    
-    const segments: {speaker?: string, content: string}[] = [];
-    const lines = text.split('\n');
-    
-    lines.forEach(line => {
-      const trimmedLine = line.trim();
-      if (!trimmedLine) return;
-      
-      const speakerMatch = trimmedLine.match(/^([^:]+):/);
-      if (speakerMatch) {
-        const speaker = speakerMatch[1].trim();
-        const content = trimmedLine.substring(speakerMatch[0].length).trim();
-        segments.push({ speaker, content });
-      } else {
-        segments.push({ content: trimmedLine });
-      }
-    });
-    
-    return segments;
-  };
   
   const transcriptSegments = getSpeakerSegments(formattedTranscript);
   
