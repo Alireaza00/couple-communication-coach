@@ -1,4 +1,3 @@
-
 export interface DateNightIdea {
   id: string;
   title: string;
@@ -39,12 +38,16 @@ export interface ConversationStarter {
 
 export interface CheckIn {
   id: string;
+  userId: string;
+  user_id: string;  // Keeping both for backwards compatibility
   date: string;
   mood: number;
   highlight: string;
   challenge: string;
   gratitude: string;
   needsSupport: boolean;
-  supportDetails?: string;
-  userId: string;
+  needs_support: boolean; // Keeping both for backwards compatibility
+  supportDetails: string | null;
+  support_details: string | null; // Keeping both for backwards compatibility
+  created_at: string;
 }
