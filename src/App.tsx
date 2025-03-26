@@ -19,6 +19,7 @@ import DailyCheckIn from "./pages/DailyCheckIn";
 import Account from "./pages/Account";
 import Pricing from "./pages/Pricing";
 import NotFound from "./pages/NotFound";
+import Exercises from "./pages/Exercises";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/analysis" element={<Analysis />} />
               <Route path="/interventions" element={<Interventions />} />
+              <Route path="/exercises" element={<Exercises />} />
               <Route path="/date-night" element={<DateNight />} />
               <Route path="/progress" element={<Progress />} />
               <Route path="/conversation-starters" element={<ConversationStarters />} />

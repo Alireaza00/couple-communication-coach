@@ -1,607 +1,268 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-    ArrowLeft,
-    Save,
-    Copy,
-    Dice1,
-    HelpCircle,
-    Plus,
-    X,
-    Edit,
-    Trash2,
-    ArrowRight,
-} from 'lucide-react';
-import { toast } from 'sonner';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { useAuth } from '@/contexts/AuthContext';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import { generateDateNightIdeas, saveDateNight, getDateNights, deleteDateNight } from '@/services/api';
-import { DateNightIdea } from '@/types';
-import { format } from 'date-fns';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 
+import { useState, useEffect } from "react";
+import { 
+  Search, 
+  Filter, 
+  Heart, 
+  Calendar,
+  ArrowRight,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import DateCard from "@/components/DateCard";
+import { useAuth } from "@/contexts/AuthContext";
+import { generateDateNightIdeas } from "@/services/api";
+import { DateNightIdea } from "@/types";
+import { toast } from "sonner";
 
 const DateNight = () => {
-    const navigate = useNavigate();
-    const { user } = useAuth();
-    const [dateNightIdeas, setDateNightIdeas] = useState<DateNightIdea[]>([]);
-    const [isLoadingIdeas, setIsLoadingIdeas] = useState(false);
-    const [isSaving, setIsSaving] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
-    const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-    const [isEditing, setIsEditing] = useState(false);
-    const [editedTitle, setEditedTitle] = useState('');
-    const [editedDescription, setEditedDescription] = useState('');
-    const [dateNightIdToDelete, setDateNightIdToDelete] = useState<string | null>(null);
-    const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
-    const [isAddingNewIdea, setIsAddingNewIdea] = useState(false);
-    const [newIdeaTitle, setNewIdeaTitle] = useState('');
-    const [newIdeaDescription, setNewIdeaDescription] = useState('');
-    const [isHelpOpen, setIsHelpOpen] = useState(false);
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-    const {
-        data: savedDateNights,
-        isLoading: isLoadingSavedDateNights,
-        refetch,
-    } = useQuery({
-        queryKey: ['dateNights', user?.uid, selectedDate],
-        queryFn: () => getDateNights(user?.uid, selectedDate),
-        enabled: !!user?.uid && !!selectedDate,
-    });
-
-    const mutation = useMutation({
-        mutationFn: saveDateNight
-    });
+  const { user } = useAuth();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [dateIdeas, setDateIdeas] = useState<DateNightIdea[]>([]);
+  
+  const filters = [
+    { id: "all", label: "All" },
+    { id: "indoor", label: "Indoor" },
+    { id: "outdoor", label: "Outdoor" },
+    { id: "free", label: "Free" },
+    { id: "romantic", label: "Romantic" },
+  ];
+  
+  useEffect(() => {
+    const loadDateIdeas = async () => {
+      setIsLoading(true);
+      try {
+        const ideas = await generateDateNightIdeas();
+        setDateIdeas(ideas);
+      } catch (error) {
+        console.error("Error loading date ideas:", error);
+        toast.error("Failed to load date ideas");
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
-    const deleteMutation = useMutation({
-        mutationFn: deleteDateNight
-    });
-
-    useEffect(() => {
-        if (savedDateNights && Array.isArray(savedDateNights) && savedDateNights.length > 0) {
-            setDateNightIdeas(savedDateNights);
-        } else {
-            setDateNightIdeas([]);
-        }
-    }, [savedDateNights]);
-
-    const handleGenerateIdeas = async () => {
-        setIsLoadingIdeas(true);
-        try {
-            const ideas = await generateDateNightIdeas();
-            setDateNightIdeas(ideas);
-        } catch (error) {
-            console.error("Failed to generate date night ideas:", error);
-            toast.error("Failed to generate date night ideas. Please try again.");
-        } finally {
-            setIsLoadingIdeas(false);
-        }
-    };
-
-    const handleSaveDateNight = async () => {
-        if (!user) {
-            toast.error("Please sign in to save date night ideas.");
-            navigate('/auth?mode=login');
-            return;
-        }
-
-        setIsSaving(true);
-        try {
-            const dateNightData = {
-                userId: user.uid,
-                date: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
-                ideas: dateNightIdeas,
-            };
-            await mutation.mutateAsync(dateNightData);
-            toast.success("Date night ideas saved successfully!");
-            await refetch();
-        } catch (error) {
-            console.error("Failed to save date night ideas:", error);
-            toast.error("Failed to save date night ideas. Please try again.");
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
-    const handleCopyIdea = (idea: DateNightIdea) => {
-        navigator.clipboard.writeText(`${idea.title}\n${idea.description}`)
-            .then(() => {
-                toast.success("Date night idea copied to clipboard!");
-            })
-            .catch(err => {
-                console.error("Could not copy idea: ", err);
-                toast.error("Failed to copy date night idea. Please try again.");
-            });
-    };
-
-    const handleEditIdea = (idea: DateNightIdea) => {
-        setIsEditing(true);
-        setEditedTitle(idea.title);
-        setEditedDescription(idea.description);
-    };
-
-    const handleUpdateIdea = (index: number) => {
-        const updatedIdeas = [...dateNightIdeas];
-        updatedIdeas[index] = {
-            ...updatedIdeas[index],
-            title: editedTitle,
-            description: editedDescription,
-        };
-        setDateNightIdeas(updatedIdeas);
-        setIsEditing(false);
-    };
-
-    const handleDeleteConfirmation = (id: string) => {
-        setDateNightIdToDelete(id);
-        setIsDeleteConfirmationOpen(true);
-    };
-
-    const handleCancelDelete = () => {
-        setDateNightIdToDelete(null);
-        setIsDeleteConfirmationOpen(false);
-    };
-
-    const handleConfirmDelete = async () => {
-        if (!user || !dateNightIdToDelete) {
-            toast.error("Could not delete the date night idea.");
-            return;
-        }
-
-        setIsDeleting(true);
-        try {
-            await deleteMutation.mutateAsync({ userId: user.uid, dateNightId: dateNightIdToDelete });
-            setDateNightIdeas(dateNightIdeas.filter(idea => idea.id !== dateNightIdToDelete));
-            toast.success("Date night idea deleted successfully!");
-            setIsDeleteConfirmationOpen(false);
-            await refetch();
-        } catch (error) {
-            console.error("Failed to delete date night idea:", error);
-            toast.error("Failed to delete date night idea. Please try again.");
-        } finally {
-            setIsDeleting(false);
-        }
-    };
-
-    const handleAddNewIdea = () => {
-        setIsAddingNewIdea(true);
-    };
-
-    const handleSaveNewIdea = () => {
-        if (!newIdeaTitle || !newIdeaDescription) {
-            toast.error("Please fill in both title and description for the new idea.");
-            return;
-        }
-
-        const newIdea: DateNightIdea = {
-            id: String(Date.now()),
-            title: newIdeaTitle,
-            description: newIdeaDescription,
-        };
-
-        setDateNightIdeas([...dateNightIdeas, newIdea]);
-        setNewIdeaTitle('');
-        setNewIdeaDescription('');
-        setIsAddingNewIdea(false);
-    };
-
-    const handleCancelNewIdea = () => {
-        setNewIdeaTitle('');
-        setNewIdeaDescription('');
-        setIsAddingNewIdea(false);
-    };
-
-    const handleHelpToggle = () => {
-        setIsHelpOpen(!isHelpOpen);
-    };
-
-    const handleDateSelect = (date: Date | undefined) => {
-        setSelectedDate(date);
-        setIsCalendarOpen(false);
-    };
-
-    const handleCopyAllIdeas = () => {
-        const allIdeasText = dateNightIdeas.map(idea => `${idea.title}\n${idea.description}`).join('\n\n');
-        navigator.clipboard.writeText(allIdeasText)
-            .then(() => {
-                toast.success("All date night ideas copied to clipboard!");
-            })
-            .catch(err => {
-                console.error("Could not copy all ideas: ", err);
-                toast.error("Failed to copy all date night ideas. Please try again.");
-            });
-    };
-
-    const handleSaveAsImage = () => {
-        const element = document.getElementById('dateNightIdeasContainer');
-        if (!element) {
-            toast.error("Could not save as image: container not found.");
-            return;
-        }
-
-        // @ts-ignore
-        import('html2canvas').then(html2canvas => {
-            html2canvas.default(element, { scale: 2 })
-                .then((canvas: HTMLCanvasElement) => {
-                    const link = document.createElement('a');
-                    link.href = canvas.toDataURL('image/png');
-                    link.download = `date-night-ideas-${format(new Date(), 'yyyyMMdd')}.png`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    toast.success("Date night ideas saved as image!");
-                })
-                .catch((err: Error) => {
-                    console.error("Could not save as image: ", err);
-                    toast.error("Failed to save date night ideas as image. Please try again.");
-                });
-        });
-    };
-
-    useEffect(() => {
-        const copyButton = document.getElementById('copyButton');
-        if (copyButton) {
-            copyButton.click();
-        }
-
-        const saveButton = document.getElementById('saveButton');
-        if (saveButton) {
-            saveButton.click();
-        }
-    }, []);
-
-    return (
-        <div className="min-h-screen bg-background">
-            <Navbar />
-
-            {/* Mobile Menu */}
-            {isMobileMenuOpen && (
-                <div className="md:hidden glass animate-fade-in-down">
-                    <div className="space-y-1 pt-2 pb-4 px-4">
-                        <div className="border-t border-gray-200 my-4 pt-4 flex flex-col space-y-3">
-                            <button
-                                onClick={handleGenerateIdeas}
-                                className="block py-2 px-3 text-base font-medium rounded-md text-foreground/70 hover:bg-primary/5 hover:text-primary"
-                                disabled={isLoadingIdeas}
-                            >
-                                {isLoadingIdeas ? "Generating..." : "Generate Ideas"}
-                            </button>
-                            <button
-                                onClick={handleSaveDateNight}
-                                className="block py-2 px-3 text-base font-medium rounded-md text-foreground/70 hover:bg-primary/5 hover:text-primary"
-                                disabled={isSaving}
-                            >
-                                {isSaving ? "Saving..." : "Save Date Night"}
-                            </button>
-                            <button
-                                onClick={handleCopyAllIdeas}
-                                className="block py-2 px-3 text-base font-medium rounded-md text-foreground/70 hover:bg-primary/5 hover:text-primary"
-                            >
-                                Copy All Ideas
-                            </button>
-                            <button
-                                onClick={handleSaveAsImage}
-                                className="block py-2 px-3 text-base font-medium rounded-md text-foreground/70 hover:bg-primary/5 hover:text-primary"
-                            >
-                                Save as Image
-                            </button>
-                            <button
-                                onClick={handleAddNewIdea}
-                                className="block py-2 px-3 text-base font-medium rounded-md text-foreground/70 hover:bg-primary/5 hover:text-primary"
-                            >
-                                Add New Idea
-                            </button>
-                            <button
-                                onClick={handleHelpToggle}
-                                className="block py-2 px-3 text-base font-medium rounded-md text-foreground/70 hover:bg-primary/5 hover:text-primary"
-                            >
-                                Help
-                            </button>
-                        </div>
-                    </div>
+    loadDateIdeas();
+  }, []);
+  
+  // Mock date ideas with more details
+  const mockDateIdeas = [
+    {
+      id: "1",
+      title: "Sunset Picnic",
+      description: "Pack a basket with cheese, wine, and snacks. Find a scenic spot to watch the sunset together.",
+      category: "romantic",
+      imageUrl: "https://placehold.co/400x300/ffdde1/ee9ca7?text=Sunset+Picnic",
+      location: "outdoor" as const,
+      cost: "low" as const,
+      duration: "2-3 hours",
+    },
+    {
+      id: "2",
+      title: "Museum Day",
+      description: "Visit a local museum or art gallery. Take your time exploring and discussing the exhibits.",
+      category: "indoor",
+      imageUrl: "https://placehold.co/400x300/e6e9f0/304352?text=Museum+Day",
+      location: "indoor" as const,
+      cost: "medium" as const,
+      duration: "3-4 hours",
+    },
+    {
+      id: "3",
+      title: "Cooking Class",
+      description: "Learn a new cuisine together with an online or in-person cooking class. Enjoy your creation afterward.",
+      category: "indoor",
+      imageUrl: "https://placehold.co/400x300/e2d1c3/fdfcfb?text=Cooking+Class",
+      location: "indoor" as const,
+      cost: "medium" as const,
+      duration: "2-3 hours",
+    },
+    {
+      id: "4",
+      title: "Hiking Adventure",
+      description: "Find a beautiful trail and spend the day hiking together. Pack a lunch to enjoy at a scenic spot.",
+      category: "outdoor",
+      imageUrl: "https://placehold.co/400x300/c1c161/d4d4b1?text=Hiking+Adventure",
+      location: "outdoor" as const,
+      cost: "free" as const,
+      duration: "4-6 hours",
+    },
+    {
+      id: "5",
+      title: "Stargazing",
+      description: "Drive to a spot with minimal light pollution. Bring blankets, hot drinks, and maybe a star map app.",
+      category: "romantic",
+      imageUrl: "https://placehold.co/400x300/243949/517fa4?text=Stargazing",
+      location: "outdoor" as const,
+      cost: "free" as const,
+      duration: "2-3 hours",
+    },
+    {
+      id: "6",
+      title: "Board Game Night",
+      description: "Stay in with your favorite board games or try a new one. Add snacks and drinks for a perfect evening.",
+      category: "indoor",
+      imageUrl: "https://placehold.co/400x300/accbee/e7f0fd?text=Game+Night",
+      location: "indoor" as const,
+      cost: "low" as const,
+      duration: "2-4 hours",
+    },
+  ];
+  
+  const handleFilterClick = (filterId: string) => {
+    if (activeFilter === filterId) {
+      setActiveFilter(null);
+    } else {
+      setActiveFilter(filterId);
+    }
+  };
+  
+  // Filter date ideas based on search query and active filter
+  const filteredDateIdeas = mockDateIdeas.filter((idea) => {
+    const matchesSearch = 
+      idea.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      idea.description.toLowerCase().includes(searchQuery.toLowerCase());
+      
+    const matchesFilter = 
+      !activeFilter || 
+      activeFilter === "all" || 
+      idea.location === activeFilter || 
+      idea.cost === activeFilter ||
+      idea.category === activeFilter;
+      
+    return matchesSearch && matchesFilter;
+  });
+  
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      
+      <main className="pt-[100px] pb-20">
+        <div className="container max-w-6xl px-4 md:px-0">
+          {/* Header Section */}
+          <section className="mb-8">
+            <h1 className="text-3xl md:text-4xl font-bold mb-2">Date Night Ideas</h1>
+            <p className="text-foreground/70 max-w-2xl">
+              Discover creative and fun ways to spend quality time together and strengthen your connection.
+            </p>
+          </section>
+          
+          {/* Featured Date Idea Section */}
+          <section className="mb-12">
+            <div className="glass rounded-xl overflow-hidden shadow-md">
+              <div className="grid grid-cols-1 md:grid-cols-2">
+                <div className="p-8 md:p-10 flex flex-col justify-center">
+                  <div className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary mb-4">
+                    <Heart className="h-3 w-3 mr-1" /> Featured Date Idea
+                  </div>
+                  <h2 className="text-2xl font-bold mb-3">Weekend Getaway</h2>
+                  <p className="text-foreground/70 mb-6">
+                    Escape the routine with a spontaneous weekend trip. Book a cozy cabin or beachside cottage just a few hours away and disconnect from daily stresses to focus on each other.
+                  </p>
+                  
+                  <div className="flex flex-wrap gap-3 mb-6">
+                    <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">
+                      2-3 days
+                    </span>
+                    <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">
+                      Romantic
+                    </span>
+                    <span className="text-xs px-2 py-1 rounded-full bg-purple-100 text-purple-700">
+                      Adventure
+                    </span>
+                  </div>
+                  
+                  <Button className="w-full md:w-auto px-8 flex items-center">
+                    View Details <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
                 </div>
-            )}
-
-            <div className="container-tight py-16 md:py-24">
-                <button onClick={() => navigate(-1)} className="inline-flex items-center mb-6 text-sm font-medium text-foreground/70 hover:text-primary transition-colors">
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Back
-                </button>
-
-                <div className="mb-8 flex justify-between items-center">
-                    <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Date Night Ideas</h1>
-                    <div className="space-x-4 flex items-center">
-                        <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                        "w-[220px] justify-start text-left font-normal",
-                                        !selectedDate && "text-muted-foreground"
-                                    )}
-                                >
-                                    <Calendar className="mr-2 h-4 w-4" />
-                                    {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="center" sideOffset={10}>
-                                <Calendar
-                                    mode="single"
-                                    selected={selectedDate}
-                                    onSelect={handleDateSelect}
-                                    disabled={(date) =>
-                                        date > new Date()
-                                    }
-                                    initialFocus
-                                />
-                            </PopoverContent>
-                        </Popover>
-                        <div className="md:hidden">
-                            <button
-                                type="button"
-                                className="inline-flex items-center justify-center rounded-md p-2 text-foreground/70 hover:bg-primary/10 hover:text-primary focus:outline-none"
-                                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            >
-                                <span className="sr-only">Open date night menu</span>
-                                {isMobileMenuOpen ? (
-                                    <X className="block h-6 w-6" aria-hidden="true" />
-                                ) : (
-                                    <Plus className="block h-6 w-6" aria-hidden="true" />
-                                )}
-                            </button>
-                        </div>
-                        <div className="hidden md:flex space-x-2">
-                            <button
-                                onClick={handleGenerateIdeas}
-                                className="btn-secondary flex items-center gap-2"
-                                disabled={isLoadingIdeas}
-                            >
-                                {isLoadingIdeas ? "Generating..." : "Generate Ideas"}
-                                <Dice1 className="h-4 w-4" />
-                            </button>
-                            <button
-                                onClick={handleSaveDateNight}
-                                className="btn-primary flex items-center gap-2"
-                                disabled={isSaving}
-                            >
-                                {isSaving ? "Saving..." : "Save Date Night"}
-                                <Save className="h-4 w-4" />
-                            </button>
-                            <button
-                                id="copyButton"
-                                onClick={handleCopyAllIdeas}
-                                className="btn-secondary flex items-center gap-2"
-                            >
-                                Copy All Ideas
-                                <Copy className="h-4 w-4" />
-                            </button>
-                            <button
-                                id="saveButton"
-                                onClick={handleSaveAsImage}
-                                className="btn-secondary flex items-center gap-2"
-                            >
-                                Save as Image
-                                <Save className="h-4 w-4" />
-                            </button>
-                            <button
-                                onClick={handleAddNewIdea}
-                                className="btn-secondary flex items-center gap-2"
-                            >
-                                Add New Idea
-                                <Plus className="h-4 w-4" />
-                            </button>
-                            <button
-                                onClick={handleHelpToggle}
-                                className="btn-secondary flex items-center gap-2"
-                            >
-                                Help
-                                <HelpCircle className="h-4 w-4" />
-                            </button>
-                        </div>
-                    </div>
+                
+                <div className="relative h-64 md:h-auto">
+                  <img 
+                    src="https://placehold.co/800x600/ffa99f/fff?text=Weekend+Getaway" 
+                    alt="Weekend Getaway" 
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute bottom-4 right-4 bg-white/90 rounded-full p-2 shadow-md">
+                    <Calendar className="h-6 w-6 text-primary" />
+                  </div>
                 </div>
-
-                {/* Help Modal */}
-                {isHelpOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                        <div className="glass rounded-2xl p-8 max-w-md relative">
-                            <button
-                                onClick={handleHelpToggle}
-                                className="absolute top-2 right-2 p-2 rounded-full hover:bg-gray-200"
-                            >
-                                <X className="h-5 w-5" />
-                            </button>
-                            <h2 className="text-2xl font-bold mb-4">Date Night Ideas - Help</h2>
-                            <p className="mb-4">
-                                This page helps you generate and manage date night ideas. Here's how to use it:
-                            </p>
-                            <ul className="list-disc pl-5 mb-4">
-                                <li><strong>Generate Ideas:</strong> Click the "Generate Ideas" button to get a list of AI-generated date night ideas.</li>
-                                <li><strong>Save Date Night:</strong> Click the "Save Date Night" button to save the current list of ideas for the selected date.</li>
-                                <li><strong>Copy All Ideas:</strong> Click the "Copy All Ideas" button to copy all ideas to your clipboard.</li>
-                                <li><strong>Save as Image:</strong> Click the "Save as Image" button to download the ideas as a PNG image.</li>
-                                <li><strong>Add New Idea:</strong> Click the "Add New Idea" button to manually add your own date night idea.</li>
-                                <li><strong>Edit Idea:</strong> Click the "Edit" icon to modify an existing idea.</li>
-                                <li><strong>Delete Idea:</strong> Click the "Trash" icon to delete an idea.</li>
-                                <li><strong>Select Date:</strong> Use the calendar to select a date for which you want to view or plan date nights.</li>
-                            </ul>
-                            <p>
-                                If you have any questions or need further assistance, please contact our support team.
-                            </p>
-                        </div>
-                    </div>
-                )}
-
-                {/* Add New Idea Modal */}
-                {isAddingNewIdea && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                        <div className="glass rounded-2xl p-8 max-w-md relative">
-                            <button
-                                onClick={handleCancelNewIdea}
-                                className="absolute top-2 right-2 p-2 rounded-full hover:bg-gray-200"
-                            >
-                                <X className="h-5 w-5" />
-                            </button>
-                            <h2 className="text-2xl font-bold mb-4">Add New Date Night Idea</h2>
-                            <div className="mb-4">
-                                <Label htmlFor="newTitle" className="block text-sm font-medium text-foreground">Title</Label>
-                                <Input
-                                    type="text"
-                                    id="newTitle"
-                                    className="mt-1 p-2 w-full rounded-md"
-                                    value={newIdeaTitle}
-                                    onChange={(e) => setNewIdeaTitle(e.target.value)}
-                                />
-                            </div>
-                            <div className="mb-4">
-                                <Label htmlFor="newDescription" className="block text-sm font-medium text-foreground">Description</Label>
-                                <textarea
-                                    id="newDescription"
-                                    className="mt-1 p-2 w-full rounded-md"
-                                    rows={4}
-                                    value={newIdeaDescription}
-                                    onChange={(e) => setNewIdeaDescription(e.target.value)}
-                                />
-                            </div>
-                            <div className="flex justify-end space-x-2">
-                                <button
-                                    onClick={handleCancelNewIdea}
-                                    className="btn-secondary"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleSaveNewIdea}
-                                    className="btn-primary"
-                                >
-                                    Save Idea
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Delete Confirmation Modal */}
-                {isDeleteConfirmationOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                        <div className="glass rounded-2xl p-8 max-w-md relative">
-                            <button
-                                onClick={handleCancelDelete}
-                                className="absolute top-2 right-2 p-2 rounded-full hover:bg-gray-200"
-                            >
-                                <X className="h-5 w-5" />
-                            </button>
-                            <h2 className="text-2xl font-bold mb-4">Confirm Delete</h2>
-                            <p className="mb-4">Are you sure you want to delete this date night idea?</p>
-                            <div className="flex justify-end space-x-2">
-                                <button
-                                    onClick={handleCancelDelete}
-                                    className="btn-secondary"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleConfirmDelete}
-                                    className="btn-primary"
-                                    disabled={isDeleting}
-                                >
-                                    {isDeleting ? "Deleting..." : "Delete"}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {isLoadingSavedDateNights ? (
-                    <div className="text-center">Loading saved date night ideas...</div>
-                ) : (
-                    <div id="dateNightIdeasContainer" className="space-y-6">
-                        {dateNightIdeas.length === 0 ? (
-                            <div className="text-center">No date night ideas generated or saved for this date.</div>
-                        ) : (
-                            dateNightIdeas.map((idea, index) => (
-                                <div key={idea.id} className="glass rounded-2xl p-6 shadow-sm relative">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div>
-                                            {isEditing ? (
-                                                <Input
-                                                    type="text"
-                                                    value={editedTitle}
-                                                    onChange={(e) => setEditedTitle(e.target.value)}
-                                                    className="text-lg font-semibold mb-1 w-full"
-                                                />
-                                            ) : (
-                                                <h3 className="text-lg font-semibold mb-1">{idea.title}</h3>
-                                            )}
-                                            {isEditing ? (
-                                                <textarea
-                                                    value={editedDescription}
-                                                    onChange={(e) => setEditedDescription(e.target.value)}
-                                                    className="text-foreground/70 w-full"
-                                                    rows={3}
-                                                />
-                                            ) : (
-                                                <p className="text-foreground/70">{idea.description}</p>
-                                            )}
-                                        </div>
-                                        <div className="flex space-x-2">
-                                            {isEditing ? (
-                                                <>
-                                                    <button
-                                                        onClick={() => handleUpdateIdea(index)}
-                                                        className="p-2 rounded-full hover:bg-primary/10"
-                                                    >
-                                                        <ArrowRight className="h-5 w-5 text-primary" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setIsEditing(false)}
-                                                        className="p-2 rounded-full hover:bg-gray-200"
-                                                    >
-                                                        <X className="h-5 w-5" />
-                                                    </button>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <button
-                                                        onClick={() => handleEditIdea(idea)}
-                                                        className="p-2 rounded-full hover:bg-primary/10"
-                                                    >
-                                                        <Edit className="h-5 w-5 text-primary" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteConfirmation(idea.id)}
-                                                        className="p-2 rounded-full hover:bg-red-200"
-                                                    >
-                                                        <Trash2 className="h-5 w-5 text-red-500" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleCopyIdea(idea)}
-                                                        className="p-2 rounded-full hover:bg-primary/10"
-                                                    >
-                                                        <Copy className="h-5 w-5 text-primary" />
-                                                    </button>
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                )}
+              </div>
             </div>
-
-            <Footer />
+          </section>
+          
+          {/* Search and Filter Section */}
+          <section className="mb-8">
+            <div className="flex flex-col sm:flex-row justify-between gap-4">
+              <div className="relative w-full sm:w-1/2 lg:w-1/3">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/40" />
+                <Input
+                  type="text"
+                  placeholder="Search date ideas..."
+                  className="pl-10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              
+              <div className="flex items-center space-x-2 overflow-x-auto pb-2 sm:pb-0">
+                <span className="text-sm text-foreground/70 flex items-center whitespace-nowrap">
+                  <Filter className="h-4 w-4 mr-1" /> Filter:
+                </span>
+                {filters.map((filter) => (
+                  <button
+                    key={filter.id}
+                    onClick={() => handleFilterClick(filter.id)}
+                    className={`px-3 py-1 rounded-full text-sm whitespace-nowrap transition-colors ${
+                      activeFilter === filter.id
+                        ? "bg-primary text-white"
+                        : "bg-secondary hover:bg-secondary/80 text-foreground/70"
+                    }`}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+          
+          {/* Date Ideas Grid Section */}
+          <section>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredDateIdeas.map((idea) => (
+                <DateCard
+                  key={idea.id}
+                  title={idea.title}
+                  description={idea.description}
+                  category={idea.category}
+                  duration={idea.duration}
+                  cost={idea.cost}
+                  location={idea.location}
+                  imageUrl={idea.imageUrl}
+                />
+              ))}
+            </div>
+            
+            {filteredDateIdeas.length === 0 && (
+              <div className="text-center py-12">
+                <Search className="h-12 w-12 text-foreground/30 mx-auto mb-4" />
+                <h3 className="text-xl font-medium mb-2">No date ideas found</h3>
+                <p className="text-foreground/70">
+                  Try adjusting your search or filters to find what you're looking for.
+                </p>
+              </div>
+            )}
+          </section>
         </div>
-    );
+      </main>
+      
+      <Footer />
+    </div>
+  );
 };
 
 export default DateNight;
