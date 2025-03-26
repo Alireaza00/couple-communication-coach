@@ -8,29 +8,43 @@ import { saveCheckIn } from "@/services/supabaseApi";
 import { MoodSlider } from "./MoodSlider";
 import { TextAreaField } from "./TextAreaField";
 import { SupportCheckbox } from "./SupportCheckbox";
+import { Form } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+const checkInSchema = z.object({
+  mood: z.number().min(1).max(10),
+  highlight: z.string().min(1, "Please share a highlight"),
+  challenge: z.string().min(1, "Please share a challenge"),
+  gratitude: z.string().min(1, "Please share something you're grateful for"),
+  needsSupport: z.boolean(),
+  supportDetails: z.string().optional(),
+});
+
+type CheckInFormValues = z.infer<typeof checkInSchema>;
 
 export function CheckInForm() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [mood, setMood] = useState<number>(5);
-  const [highlight, setHighlight] = useState<string>("");
-  const [challenge, setChallenge] = useState<string>("");
-  const [gratitude, setGratitude] = useState<string>("");
-  const [needsSupport, setNeedsSupport] = useState<boolean>(false);
-  const [supportDetails, setSupportDetails] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  
+  const form = useForm<CheckInFormValues>({
+    resolver: zodResolver(checkInSchema),
+    defaultValues: {
+      mood: 5,
+      highlight: "",
+      challenge: "",
+      gratitude: "",
+      needsSupport: false,
+      supportDetails: "",
+    },
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSubmit = async (values: CheckInFormValues) => {
     if (!user) {
       toast.error("You must be logged in to submit a check-in");
       navigate("/auth?mode=login");
-      return;
-    }
-    
-    if (!highlight || !challenge || !gratitude) {
-      toast.error("Please fill out all required fields");
       return;
     }
     
@@ -38,14 +52,18 @@ export function CheckInForm() {
     
     try {
       const checkInData = {
-        userId: user.id,
+        userId: user.uid, // Using uid instead of id
+        user_id: user.uid, // Adding the snake_case version
         date: new Date().toISOString(),
-        mood,
-        highlight,
-        challenge,
-        gratitude,
-        needsSupport,
-        supportDetails: needsSupport ? supportDetails : null,
+        mood: values.mood,
+        highlight: values.highlight,
+        challenge: values.challenge,
+        gratitude: values.gratitude,
+        needsSupport: values.needsSupport,
+        needs_support: values.needsSupport, // Adding the snake_case version
+        supportDetails: values.needsSupport ? values.supportDetails : null,
+        support_details: values.needsSupport ? values.supportDetails : null, // Adding the snake_case version
+        created_at: new Date().toISOString(),
       };
       
       await saveCheckIn(checkInData);
@@ -61,47 +79,44 @@ export function CheckInForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <MoodSlider mood={mood} setMood={setMood} />
-      
-      <TextAreaField
-        label="What was a highlight of your relationship today?"
-        value={highlight}
-        onChange={setHighlight}
-        placeholder="Share something positive that happened..."
-        maxLength={500}
-      />
-      
-      <TextAreaField
-        label="What was challenging in your relationship today?"
-        value={challenge}
-        onChange={setChallenge}
-        placeholder="Share a challenge you faced..."
-        maxLength={500}
-      />
-      
-      <TextAreaField
-        label="What are you grateful for in your relationship?"
-        value={gratitude}
-        onChange={setGratitude}
-        placeholder="Express gratitude for your partner or relationship..."
-        maxLength={500}
-      />
-      
-      <SupportCheckbox
-        needsSupport={needsSupport}
-        setNeedsSupport={setNeedsSupport}
-        supportDetails={supportDetails}
-        setSupportDetails={setSupportDetails}
-      />
-      
-      <Button 
-        type="submit" 
-        className="w-full" 
-        disabled={isSubmitting}
-      >
-        {isSubmitting ? "Submitting..." : "Submit Check-in"}
-      </Button>
-    </form>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <MoodSlider control={form.control} />
+        
+        <TextAreaField
+          control={form.control}
+          name="highlight"
+          label="What was a highlight of your relationship today?"
+          placeholder="Share something positive that happened..."
+          description="Focus on moments of connection and joy"
+        />
+        
+        <TextAreaField
+          control={form.control}
+          name="challenge"
+          label="What was challenging in your relationship today?"
+          placeholder="Share a challenge you faced..."
+          description="Being honest about challenges helps growth"
+        />
+        
+        <TextAreaField
+          control={form.control}
+          name="gratitude"
+          label="What are you grateful for in your relationship?"
+          placeholder="Express gratitude for your partner or relationship..."
+          description="Practicing gratitude strengthens bonds"
+        />
+        
+        <SupportCheckbox control={form.control} />
+        
+        <Button 
+          type="submit" 
+          className="w-full" 
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Submitting..." : "Submit Check-in"}
+        </Button>
+      </form>
+    </Form>
   );
 }

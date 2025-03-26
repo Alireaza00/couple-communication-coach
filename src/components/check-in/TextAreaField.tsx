@@ -1,9 +1,16 @@
 
-import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Control } from "react-hook-form";
 
-interface TextAreaFieldProps {
+export interface TextAreaFieldProps {
   control: Control<any>;
   name: string;
   label: string;
@@ -11,7 +18,13 @@ interface TextAreaFieldProps {
   description: string;
 }
 
-export function TextAreaField({ control, name, label, placeholder, description }: TextAreaFieldProps) {
+export function TextAreaField({
+  control,
+  name,
+  label,
+  placeholder,
+  description,
+}: TextAreaFieldProps) {
   return (
     <FormField
       control={control}

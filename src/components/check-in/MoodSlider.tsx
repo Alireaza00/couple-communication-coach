@@ -5,7 +5,7 @@ import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Control } from "react-hook-form";
 
-interface MoodSliderProps {
+export interface MoodSliderProps {
   control: Control<any>;
 }
 
