@@ -1,6 +1,14 @@
 
+import React from "react";
+import { 
+  FormControl, 
+  FormDescription, 
+  FormField, 
+  FormItem, 
+  FormLabel,
+  FormMessage
+} from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FormControl, FormDescription, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Control } from "react-hook-form";
 
@@ -8,9 +16,9 @@ export interface SupportCheckboxProps {
   control: Control<any>;
 }
 
-export function SupportCheckbox({ control }: SupportCheckboxProps) {
+export const SupportCheckbox = ({ control }: SupportCheckboxProps) => {
   return (
-    <>
+    <div className="space-y-4">
       <FormField
         control={control}
         name="needsSupport"
@@ -23,36 +31,34 @@ export function SupportCheckbox({ control }: SupportCheckboxProps) {
               />
             </FormControl>
             <div className="space-y-1 leading-none">
-              <FormLabel>I need support with something specific</FormLabel>
+              <FormLabel>
+                I could use some extra support today
+              </FormLabel>
               <FormDescription>
-                Check this if you'd like to discuss something important with your partner
+                Check this if you'd like your partner to know you need extra support
               </FormDescription>
             </div>
           </FormItem>
         )}
       />
-
-      {/* Conditionally render the support details field */}
+      
+      {/* Show textarea only if needs support is checked */}
       <FormField
         control={control}
         name="supportDetails"
         render={({ field }) => (
-          <FormItem className="mt-4" style={{ display: field.value ? 'block' : 'none' }}>
-            <FormLabel>What would you like support with?</FormLabel>
+          <FormItem className="hidden-form-item">
             <FormControl>
-              <Textarea 
-                placeholder="Share what you'd like to discuss..." 
-                {...field} 
+              <Textarea
+                placeholder="What kind of support would be helpful today?"
                 className="min-h-[100px]"
+                {...field}
               />
             </FormControl>
-            <FormDescription>
-              Be specific about what you need from your partner
-            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
       />
-    </>
+    </div>
   );
-}
+};

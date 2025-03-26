@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { 
   MessageSquare, 
@@ -19,6 +18,7 @@ import { Progress } from "@/components/ui/progress";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import InterventionCard from "@/components/InterventionCard";
+import { Link } from "react-router-dom";
 
 const Interventions = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -228,9 +228,11 @@ const Interventions = () => {
                       </div>
                     </div>
                     
-                    <Button className="w-full md:w-auto px-8 flex items-center">
-                      Start Exercise <ArrowRight className="h-4 w-4 ml-2" />
-                    </Button>
+                    <Link to="/exercises?id=love-languages">
+                      <Button className="w-full md:w-auto px-8 flex items-center">
+                        Start Exercise <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </Link>
                   </div>
                   
                   <div className="md:w-1/3 flex items-center justify-center">

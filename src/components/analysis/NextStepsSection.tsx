@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { MessageSquare, Brain, ArrowRight, InfoIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -106,7 +105,10 @@ const NextStepsSection = () => {
                 <div className="mt-6 flex justify-end">
                   <Button 
                     variant="outline" 
-                    onClick={() => setShowNoInterruptionsDialog(false)}
+                    onClick={() => {
+                      setShowNoInterruptionsDialog(false);
+                      window.location.href = "/exercises?id=no-interruptions";
+                    }}
                   >
                     Close
                   </Button>
@@ -219,7 +221,10 @@ const NextStepsSection = () => {
                 <div className="mt-6 flex justify-end">
                   <Button 
                     variant="outline" 
-                    onClick={() => setShowRepairAttemptsDialog(false)}
+                    onClick={() => {
+                      setShowRepairAttemptsDialog(false);
+                      window.location.href = "/exercises?id=repair-attempts";
+                    }}
                   >
                     Close
                   </Button>

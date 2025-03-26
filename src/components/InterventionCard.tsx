@@ -2,6 +2,7 @@
 import { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Link } from "react-router-dom";
 
 interface InterventionCardProps {
   title: string;
@@ -11,6 +12,7 @@ interface InterventionCardProps {
   timeEstimate: string;
   isCompleted?: boolean;
   onClick?: () => void;
+  id?: number;
   className?: string;
 }
 
@@ -22,6 +24,7 @@ const InterventionCard = ({
   timeEstimate,
   isCompleted = false,
   onClick,
+  id,
   className,
 }: InterventionCardProps) => {
   const levelColor = {
@@ -67,13 +70,24 @@ const InterventionCard = ({
           </div>
           
           <div className="mt-4">
-            <Button 
-              onClick={onClick}
-              variant={isCompleted ? "outline" : "default"}
-              className="w-full"
-            >
-              {isCompleted ? "View Results" : "Start Exercise"}
-            </Button>
+            {onClick ? (
+              <Button 
+                onClick={onClick}
+                variant={isCompleted ? "outline" : "default"}
+                className="w-full"
+              >
+                {isCompleted ? "View Results" : "Start Exercise"}
+              </Button>
+            ) : (
+              <Link to={`/exercises${id ? `?id=${id}` : ''}`} className="w-full">
+                <Button 
+                  variant={isCompleted ? "outline" : "default"}
+                  className="w-full"
+                >
+                  {isCompleted ? "View Results" : "Start Exercise"}
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </div>
