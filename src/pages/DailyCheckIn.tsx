@@ -60,15 +60,19 @@ const DailyCheckIn = () => {
         throw new Error("User must be logged in to submit a check-in");
       }
       
-      const checkInData = {
+      const checkInData: Omit<CheckIn, "id"> = {
+        userId: user.uid,
         user_id: user.uid,
         date: new Date().toISOString(),
         mood: values.mood,
         highlight: values.highlight,
         challenge: values.challenge,
         gratitude: values.gratitude,
+        needsSupport: values.needsSupport,
         needs_support: values.needsSupport,
+        supportDetails: values.needsSupport ? values.supportDetails : null,
         support_details: values.needsSupport ? values.supportDetails : null,
+        created_at: new Date().toISOString()
       };
       
       return saveCheckIn(checkInData);
